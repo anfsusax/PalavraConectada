@@ -9,6 +9,10 @@ RUN dotnet restore "PalavraConectada.API.csproj"
 
 # Copiar todo o código
 COPY backend/PalavraConectada.API/. ./
+
+# Garantir que bible.db existe (criar vazio se não existir)
+RUN touch bible.db
+
 RUN dotnet build "PalavraConectada.API.csproj" -c Release -o /app/build
 
 # Publish Stage
@@ -24,7 +28,7 @@ EXPOSE 8080
 COPY --from=publish /app/publish .
 
 # Copiar banco de dados
-COPY backend/PalavraConectada.API/bible.db ./bible.db
+COPY --from=build /src/bible.db ./bible.db
 
 ENTRYPOINT ["dotnet", "PalavraConectada.API.dll"]
 
