@@ -64,6 +64,7 @@ builder.Services.AddHttpClient();
 // Serviços personalizados
 builder.Services.AddScoped<EmotionAnalyzerService>();
 builder.Services.AddScoped<BibleService>();
+builder.Services.AddScoped<BibleMigrationService>(); // 🔥 Migração inteligente
 
 // CORS - Permitir requisições do frontend E do próprio Swagger
 builder.Services.AddCors(options =>
@@ -74,8 +75,10 @@ builder.Services.AddCors(options =>
                 "http://localhost:7000",      // Próprio Swagger HTTP
                 "https://localhost:7001",     // Próprio Swagger HTTPS
                 "http://localhost:4200",      // Angular
-                "https://localhost:5001",     // Blazor
-                "http://localhost:5001"       // Blazor HTTP
+                "https://localhost:5001",     // Blazor HTTPS
+                "http://localhost:5001",      // Blazor HTTP
+                "http://localhost:5292",      // Blazor HTTP (porta alternativa)
+                "https://localhost:7292"      // Blazor HTTPS (porta alternativa)
             )
             .AllowAnyMethod()
             .AllowAnyHeader()

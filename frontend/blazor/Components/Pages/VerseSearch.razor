@@ -1,16 +1,39 @@
 @page "/verse-search"
-@using PalavraConectada.Models
-@using PalavraConectada.Services
-@inject BibleApiService BibleApi
+@using PalavraConectada.Blazor.Services
+@inject BackendApiService BackendApi
+@inject NavigationManager Navigation
 
-<!-- Componente de busca - o coração da aplicação -->
+<!-- Componente de busca inteligente - Blazor com IA! -->
+<PageTitle>Palavra Conectada 📖</PageTitle>
+
 <div class="verse-search-container">
+    <!-- HEADER -->
     <div class="header">
         <h1>📖 Palavra Conectada</h1>
-        <p class="subtitle">Encontre versículos bíblicos relacionados às suas palavras e sentimentos</p>
+        <p class="subtitle">
+            @(searchMode == "intelligent" 
+                ? "Conte como você está se sentindo e receba versículos personalizados com IA" 
+                : "Busque versículos por palavra-chave")
+        </p>
     </div>
 
-    <!-- Área de busca -->
+    <!-- TOGGLE DE MODO -->
+    <div class="mode-toggle">
+        <button 
+            @onclick='() => searchMode = "intelligent"' 
+            class='@($"mode-btn {(searchMode == "intelligent" ? "active" : "")}")'
+        >
+            🧠 Busca Inteligente (IA)
+        </button>
+        <button 
+            @onclick='() => searchMode = "simple"' 
+            class='@($"mode-btn {(searchMode == "simple" ? "active" : "")}")'
+        >
+            🔍 Busca Simples
+        </button>
+    </div>
+
+    <!-- ÁREA DE BUSCA -->
     <div class="search-section">
         <div class="search-box">
             <input 
@@ -18,7 +41,9 @@
                 @bind="searchTerm" 
                 @bind:event="oninput"
                 @onkeyup="HandleKeyPress"
-                placeholder="Digite uma palavra ou frase (ex: amor, paz, esperança...)"
+                placeholder='@(searchMode == "intelligent" 
+                    ? "Ex: Estou triste, Estou com medo, Estou ansioso..." 
+                    : "Ex: amor, paz, esperança...")'
                 class="search-input"
             />
             
@@ -31,71 +56,158 @@
         </div>
 
         <div class="button-group">
-            <button @onclick="SearchVerses" disabled="@isLoading" class="btn btn-primary">
-                @(isLoading ? "Buscando..." : "🔍 Buscar Versículos")
+            <button @onclick="Search" disabled="@isLoading" class="btn btn-primary">
+                @(isLoading ? "Processando..." : (searchMode == "intelligent" ? "🧠 Analisar com IA" : "🔍 Buscar"))
             </button>
             
             <button @onclick="GetRandomVerse" disabled="@isLoading" class="btn btn-secondary">
-                🎲 Versículo Aleatório
+                🎲 Surpreenda-me
             </button>
         </div>
     </div>
 
-    <!-- Exemplos de busca -->
-    @if (searchResult == null && !isLoading)
+    <!-- EXEMPLOS DE BUSCA -->
+    @if (intelligentResult == null && searchResult == null && randomVerse == null && !isLoading)
     {
         <div class="examples-section">
-            <p class="examples-title">Sugestões de busca:</p>
+            <p class="examples-title">✨ Experimente:</p>
             <div class="examples-grid">
                 @foreach (var example in exampleSearches)
                 {
                     <button 
-                        @onclick="() => UseExample(example.Term)"
-                        class="example-btn"
+                        @onclick="() => UseExample(example.Term, example.Mode)"
+                        class='@($"example-btn {(example.Mode == "intelligent" ? "intelligent" : "")}")'
                         disabled="@isLoading">
-                        @example.Term
+                        <span class="example-term">@example.Term</span>
+                        <span class="example-desc">@example.Description</span>
                     </button>
                 }
             </div>
         </div>
     }
 
-    <!-- Mensagem de erro -->
+    <!-- MENSAGEM DE ERRO -->
     @if (!string.IsNullOrEmpty(errorMessage))
     {
-        <div class="error-message">
+        <div class="alert alert-error">
             ⚠️ @errorMessage
         </div>
     }
 
-    <!-- Loading spinner -->
+    <!-- LOADING -->
     @if (isLoading)
     {
         <div class="loading">
             <div class="spinner"></div>
-            <p>Buscando na Palavra de Deus...</p>
+            <p>@(searchMode == "intelligent" ? "Analisando suas emoções..." : "Buscando na Palavra de Deus...")</p>
         </div>
     }
 
-    <!-- Resultados da busca -->
-    @if (searchResult != null && searchResult.Occurrence > 0)
+    <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+    <!-- RESULTADO INTELIGENTE (COM IA) -->
+    <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+    @if (intelligentResult != null)
+    {
+        <div class="intelligent-results">
+            
+            <!-- ANÁLISE DE EMOÇÃO -->
+            <div class="emotion-analysis">
+                <div class="emotion-header">
+                    <span class="emotion-icon">@GetEmotionIcon(intelligentResult.DetectedEmotion)</span>
+                    <div>
+                        <h3>@intelligentResult.Message</h3>
+                        <div class="emotion-meta">
+                            <span class="emotion-name">@intelligentResult.DetectedEmotion</span>
+                            <span class='@($"badge {GetConfidenceBadgeClass(intelligentResult.Confidence)}")'>
+                                @intelligentResult.Confidence% de confiança
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VERSÍCULO RECOMENDADO -->
+            @if (intelligentResult.RecommendedVerse != null)
+            {
+                <div class="recommended-verse">
+                    <div class="verse-label">
+                        <span class="star">⭐</span> 
+                        <strong>Versículo Recomendado para Você:</strong>
+                    </div>
+                    
+                    <div class="verse-card featured">
+                        <div class="verse-reference">
+                            @GetVerseReference(intelligentResult.RecommendedVerse)
+                        </div>
+                        <div class="verse-text">
+                            "@intelligentResult.RecommendedVerse.Text"
+                        </div>
+                        <div class="verse-footer">
+                            <span class="verse-meta">
+                                @intelligentResult.RecommendedVerse.Author • 
+                                @intelligentResult.RecommendedVerse.Testament
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- VERSÍCULOS ALTERNATIVOS -->
+            @if (intelligentResult.AlternativeVerses?.Any() == true)
+            {
+                <div class="alternative-verses">
+                    <h4>📚 Outros versículos que podem ajudar:</h4>
+                    <div class="verses-grid">
+                        @foreach (var verse in intelligentResult.AlternativeVerses)
+                        {
+                            <div class="verse-card">
+                                <div class="verse-reference-small">
+                                    @GetVerseReference(verse)
+                                </div>
+                                <div class="verse-text-small">
+                                    "@verse.Text"
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- SUGESTÕES -->
+            @if (intelligentResult.Suggestions?.Any() == true)
+            {
+                <div class="suggestions">
+                    <h4>💡 O que você pode fazer:</h4>
+                    <ul class="suggestions-list">
+                        @foreach (var suggestion in intelligentResult.Suggestions)
+                        {
+                            <li>@suggestion</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+        </div>
+    }
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+    <!-- RESULTADO SIMPLES (BUSCA POR PALAVRA) -->
+    <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+    @if (searchResult != null && searchResult.Count > 0)
     {
         <div class="results-section">
             <div class="results-header">
                 <h2>📚 Resultados da Busca</h2>
                 <p class="results-count">
-                    Encontrados <strong>@searchResult.Occurrence</strong> 
-                    versículo(s) em <strong>@selectedVersion.ToUpper()</strong>
+                    Encontrados <strong>@searchResult.Count</strong> 
+                    versículo(s) com "<strong>@searchResult.Keyword</strong>"
                 </p>
             </div>
 
             <div class="verses-container">
-                @for (int i = 0; i < searchResult.Verses.Count; i++)
+                @foreach (var verse in searchResult.Verses)
                 {
-                    var verse = searchResult.Verses[i];
-                    var animationDelay = $"{i * 0.1}s";
-                    
-                    <div class="verse-card animate-in" style="animation-delay: @animationDelay">
+                    <div class="verse-card">
                         <div class="verse-reference">
                             @GetVerseReference(verse)
                         </div>
@@ -105,26 +217,62 @@
                         </div>
                         
                         <div class="verse-footer">
-                            <span class="verse-version">@searchResult.Version.ToUpper()</span>
+                            <span class="verse-meta">
+                                @verse.Author • @verse.Group
+                            </span>
                         </div>
                     </div>
                 }
             </div>
-
-            @if (searchResult.Verses.Count < searchResult.Occurrence)
-            {
-                <div class="more-results">
-                    <p>Mostrando @searchResult.Verses.Count de @searchResult.Occurrence versículos</p>
-                </div>
-            }
         </div>
     }
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+    <!-- VERSÍCULO ALEATÓRIO -->
+    <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+    @if (randomVerse != null)
+    {
+        <div class="random-verse">
+            <div class="verse-label">
+                <span class="dice">🎲</span> 
+                <strong>Versículo do Dia:</strong>
+            </div>
+            
+            <div class="verse-card featured">
+                <div class="verse-reference">
+                    @GetVerseReference(randomVerse)
+                </div>
+                <div class="verse-text">
+                    "@randomVerse.Text"
+                </div>
+                <div class="verse-footer">
+                    <span class="verse-meta">
+                        @randomVerse.Author • @randomVerse.Group
+                    </span>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- FOOTER -->
+    <div class="footer">
+        <p>Desenvolvido com 💙 usando Blazor + ASP.NET Core + IA</p>
+        <p class="tech-stack">Blazor WebAssembly | C# | SQLite | Entity Framework</p>
+    </div>
 </div>
 
 @code {
+    // Estado da aplicação
     private string searchTerm = string.Empty;
     private string selectedVersion = "nvi";
-    private SearchResult? searchResult;
+    private string searchMode = "intelligent";
+    
+    // Resultados
+    private SearchVerseResponse? searchResult;
+    private RecommendationResponse? intelligentResult;
+    private VerseDto? randomVerse;
+    
+    // UI State
     private bool isLoading = false;
     private string errorMessage = string.Empty;
 
@@ -139,34 +287,74 @@
     // Exemplos de buscas para ajudar o usuário
     private List<ExampleSearch> exampleSearches = new()
     {
-        new() { Term = "amor", Description = "Versículos sobre amor" },
-        new() { Term = "fé", Description = "Versículos sobre fé" },
-        new() { Term = "esperança", Description = "Versículos sobre esperança" },
-        new() { Term = "paz", Description = "Versículos sobre paz" },
-        new() { Term = "sabedoria", Description = "Versículos sobre sabedoria" }
+        new() { Term = "Estou triste hoje", Description = "IA detecta tristeza e recomenda consolo", Mode = "intelligent" },
+        new() { Term = "Estou com medo", Description = "IA detecta medo e recomenda coragem", Mode = "intelligent" },
+        new() { Term = "Estou ansioso", Description = "IA detecta ansiedade e recomenda paz", Mode = "intelligent" },
+        new() { Term = "amor", Description = "Busca simples por palavra", Mode = "simple" },
+        new() { Term = "paz", Description = "Busca simples por palavra", Mode = "simple" }
     };
 
-    // Busca versículos baseado no termo inserido
-    private async Task SearchVerses()
+    // ═══════════════════════════════════════════════════════════════════════════
+    // BUSCA INTELIGENTE (COM IA)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    private async Task IntelligentSearch()
     {
         if (string.IsNullOrWhiteSpace(searchTerm))
         {
-            errorMessage = "Por favor, insira uma palavra ou frase para buscar.";
+            errorMessage = "Por favor, insira como você está se sentindo.";
             return;
         }
 
         isLoading = true;
         errorMessage = string.Empty;
-        searchResult = null;
+        ClearResults();
 
         try
         {
-            var result = await BibleApi.SearchVersesAsync(searchTerm, selectedVersion);
+            var result = await BackendApi.GetIntelligentRecommendationAsync(searchTerm, selectedVersion);
+            intelligentResult = result;
+
+            if (result?.RecommendedVerse == null)
+            {
+                errorMessage = "Não consegui encontrar versículos para este sentimento.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Erro ao processar sua busca. Tente novamente.";
+            Console.WriteLine($"Erro: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // BUSCA SIMPLES (POR PALAVRA)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    private async Task SimpleSearch()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            errorMessage = "Por favor, insira uma palavra para buscar.";
+            return;
+        }
+
+        isLoading = true;
+        errorMessage = string.Empty;
+        ClearResults();
+
+        try
+        {
+            var result = await BackendApi.SearchVersesAsync(searchTerm, selectedVersion);
             searchResult = result;
 
-            if (result?.Occurrence == 0)
+            if (result?.Count == 0)
             {
-                errorMessage = "Nenhum versículo encontrado com este termo.";
+                errorMessage = "Nenhum versículo encontrado com esta palavra.";
             }
         }
         catch (Exception ex)
@@ -180,26 +368,19 @@
         }
     }
 
-    // Busca versículo aleatório - deixar Deus surpreender
+    // ═══════════════════════════════════════════════════════════════════════════
+    // BUSCA ALEATÓRIA
+    // ═══════════════════════════════════════════════════════════════════════════
+
     private async Task GetRandomVerse()
     {
         isLoading = true;
         errorMessage = string.Empty;
-        searchResult = null;
+        ClearResults();
 
         try
         {
-            var verse = await BibleApi.GetRandomVerseAsync(selectedVersion);
-            
-            if (verse != null)
-            {
-                searchResult = new SearchResult
-                {
-                    Occurrence = 1,
-                    Version = selectedVersion,
-                    Verses = new List<Verse> { verse }
-                };
-            }
+            randomVerse = await BackendApi.GetRandomVerseAsync(selectedVersion);
         }
         catch (Exception ex)
         {
@@ -212,33 +393,83 @@
         }
     }
 
-    // Usar um dos exemplos de busca
-    private async Task UseExample(string term)
+    // ═══════════════════════════════════════════════════════════════════════════
+    // MÉTODOS DE APOIO
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    private async Task Search()
     {
-        searchTerm = term;
-        await SearchVerses();
+        if (searchMode == "intelligent")
+        {
+            await IntelligentSearch();
+        }
+        else
+        {
+            await SimpleSearch();
+        }
     }
 
-    // Lidar com a tecla Enter
+    private async Task UseExample(string term, string mode)
+    {
+        searchTerm = term;
+        searchMode = mode;
+        await Search();
+    }
+
     private async Task HandleKeyPress(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
-            await SearchVerses();
+            await Search();
         }
     }
 
-    // Formatar referência do versículo
-    private string GetVerseReference(Verse verse)
+    private void ClearResults()
     {
-        return $"{verse.Book?.Name} {verse.Chapter}:{verse.Number}";
+        searchResult = null;
+        intelligentResult = null;
+        randomVerse = null;
     }
 
-    // Classe auxiliar para exemplos
+    private string GetVerseReference(VerseDto verse)
+    {
+        return $"{verse.BookName} {verse.Chapter}:{verse.Number}";
+    }
+
+    private string GetConfidenceBadgeClass(int confidence)
+    {
+        if (confidence >= 80) return "badge-success";
+        if (confidence >= 50) return "badge-warning";
+        return "badge-secondary";
+    }
+
+    private string GetEmotionIcon(string emotion)
+    {
+        return emotion.ToLower() switch
+        {
+            "tristeza" => "😢",
+            "alegria" => "😊",
+            "medo" => "😨",
+            "ansiedade" => "😰",
+            "solidão" => "😔",
+            "raiva" => "😠",
+            "gratidão" => "🙏",
+            "esperança" => "🌟",
+            _ => "💭"
+        };
+    }
+
+    // Classes auxiliares
     private class ExampleSearch
     {
         public string Term { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+        public string Mode { get; set; } = "simple";
+    }
+
+    private class BibleVersion
+    {
+        public string Code { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
     }
 }
-

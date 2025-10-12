@@ -1,17 +1,42 @@
 <div class="verse-search-container">
+  <!-- HEADER -->
   <div class="header">
     <h1>📖 Palavra Conectada</h1>
-    <p class="subtitle">Encontre versículos bíblicos relacionados às suas palavras e sentimentos</p>
+    <p class="subtitle">
+      {{ searchMode === 'intelligent' 
+        ? 'Conte como você está se sentindo e receba versículos personalizados com IA' 
+        : 'Busque versículos por palavra-chave' }}
+    </p>
   </div>
 
-  <!-- Área de busca -->
+  <!-- TOGGLE DE MODO -->
+  <div class="mode-toggle">
+    <button 
+      (click)="searchMode = 'intelligent'" 
+      [class.active]="searchMode === 'intelligent'"
+      class="mode-btn"
+    >
+      🧠 Busca Inteligente (IA)
+    </button>
+    <button 
+      (click)="searchMode = 'simple'" 
+      [class.active]="searchMode === 'simple'"
+      class="mode-btn"
+    >
+      🔍 Busca Simples
+    </button>
+  </div>
+
+  <!-- ÁREA DE BUSCA -->
   <div class="search-section">
     <div class="search-box">
       <input 
         type="text" 
         [(ngModel)]="searchTerm" 
-        (keyup.enter)="searchVerses()"
-        placeholder="Digite uma palavra ou frase (ex: amor, paz, esperança...)"
+        (keyup.enter)="search()"
+        [placeholder]="searchMode === 'intelligent' 
+          ? 'Ex: Estou triste, Estou com medo, Estou ansioso...' 
+          : 'Ex: amor, paz, esperança...'"
         class="search-input"
       />
       
@@ -23,56 +48,132 @@
     </div>
 
     <div class="button-group">
-      <button (click)="searchVerses()" [disabled]="isLoading" class="btn btn-primary">
-        {{ isLoading ? 'Buscando...' : '🔍 Buscar Versículos' }}
+      <button (click)="search()" [disabled]="isLoading" class="btn btn-primary">
+        {{ isLoading ? 'Processando...' : (searchMode === 'intelligent' ? '🧠 Analisar com IA' : '🔍 Buscar') }}
       </button>
       
       <button (click)="getRandomVerse()" [disabled]="isLoading" class="btn btn-secondary">
-        🎲 Versículo Aleatório
+        🎲 Surpreenda-me
       </button>
     </div>
   </div>
 
-  <!-- Exemplos de busca -->
-  <div class="examples-section" *ngIf="!searchResult">
-    <p class="examples-title">Sugestões de busca:</p>
+  <!-- EXEMPLOS DE BUSCA -->
+  <div class="examples-section" *ngIf="!intelligentResult && !searchResult && !randomVerse">
+    <p class="examples-title">✨ Experimente:</p>
     <div class="examples-grid">
       <button 
         *ngFor="let example of exampleSearches" 
-        (click)="useExample(example.term)"
+        (click)="useExample(example.term, example.mode)"
         class="example-btn"
+        [class.intelligent]="example.mode === 'intelligent'"
         [disabled]="isLoading"
       >
-        {{ example.term }}
+        <span class="example-term">{{ example.term }}</span>
+        <span class="example-desc">{{ example.description }}</span>
       </button>
     </div>
   </div>
 
-  <!-- Mensagem de erro -->
-  <div *ngIf="errorMessage" class="error-message">
+  <!-- MENSAGEM DE ERRO -->
+  <div *ngIf="errorMessage" class="alert alert-error">
     ⚠️ {{ errorMessage }}
   </div>
 
-  <!-- Loading spinner -->
+  <!-- LOADING -->
   <div *ngIf="isLoading" class="loading">
     <div class="spinner"></div>
-    <p>Buscando na Palavra de Deus...</p>
+    <p>{{ searchMode === 'intelligent' ? 'Analisando suas emoções...' : 'Buscando na Palavra de Deus...' }}</p>
   </div>
 
-  <!-- Resultados da busca -->
-  <div *ngIf="searchResult && searchResult.occurrence > 0" class="results-section">
+  <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+  <!-- RESULTADO INTELIGENTE (COM IA) -->
+  <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="intelligentResult" class="intelligent-results">
+    
+    <!-- ANÁLISE DE EMOÇÃO -->
+    <div class="emotion-analysis">
+      <div class="emotion-header">
+        <span class="emotion-icon">{{ getEmotionIcon(intelligentResult.detectedEmotion) }}</span>
+        <div>
+          <h3>{{ intelligentResult.message }}</h3>
+          <div class="emotion-meta">
+            <span class="emotion-name">{{ intelligentResult.detectedEmotion }}</span>
+            <span [class]="'badge ' + getConfidenceBadgeClass(intelligentResult.confidence)">
+              {{ intelligentResult.confidence }}% de confiança
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VERSÍCULO RECOMENDADO -->
+    <div *ngIf="intelligentResult.recommendedVerse" class="recommended-verse">
+      <div class="verse-label">
+        <span class="star">⭐</span> 
+        <strong>Versículo Recomendado para Você:</strong>
+      </div>
+      
+      <div class="verse-card featured">
+        <div class="verse-reference">
+          {{ getVerseReference(intelligentResult.recommendedVerse) }}
+        </div>
+        <div class="verse-text">
+          "{{ intelligentResult.recommendedVerse.text }}"
+        </div>
+        <div class="verse-footer">
+          <span class="verse-meta">
+            {{ intelligentResult.recommendedVerse.author }} • 
+            {{ intelligentResult.recommendedVerse.testament }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- VERSÍCULOS ALTERNATIVOS -->
+    <div *ngIf="intelligentResult.alternativeVerses?.length" class="alternative-verses">
+      <h4>📚 Outros versículos que podem ajudar:</h4>
+      <div class="verses-grid">
+        <div *ngFor="let verse of intelligentResult.alternativeVerses; let i = index" 
+             class="verse-card"
+             [style.animation-delay]="(i * 0.1) + 's'">
+          <div class="verse-reference-small">
+            {{ getVerseReference(verse) }}
+          </div>
+          <div class="verse-text-small">
+            "{{ verse.text }}"
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUGESTÕES -->
+    <div *ngIf="intelligentResult.suggestions?.length" class="suggestions">
+      <h4>💡 O que você pode fazer:</h4>
+      <ul class="suggestions-list">
+        <li *ngFor="let suggestion of intelligentResult.suggestions">
+          {{ suggestion }}
+        </li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+  <!-- RESULTADO SIMPLES (BUSCA POR PALAVRA) -->
+  <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="searchResult && searchResult.count > 0" class="results-section">
     <div class="results-header">
       <h2>📚 Resultados da Busca</h2>
       <p class="results-count">
-        Encontrados <strong>{{ searchResult.occurrence }}</strong> 
-        versículo(s) em <strong>{{ selectedVersion.toUpperCase() }}</strong>
+        Encontrados <strong>{{ searchResult.count }}</strong> 
+        versículo(s) com "<strong>{{ searchResult.keyword }}</strong>"
       </p>
     </div>
 
     <div class="verses-container">
       <div *ngFor="let verse of searchResult.verses; let i = index" 
            class="verse-card"
-           [class.animate-in]="true"
            [style.animation-delay]="(i * 0.1) + 's'">
         
         <div class="verse-reference">
@@ -84,15 +185,42 @@
         </div>
         
         <div class="verse-footer">
-          <span class="verse-version">{{ searchResult.version.toUpperCase() }}</span>
+          <span class="verse-meta">
+            {{ verse.author }} • {{ verse.group }}
+          </span>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Limitar exibição se houver muitos resultados -->
-    <div *ngIf="searchResult.verses.length < searchResult.occurrence" class="more-results">
-      <p>Mostrando {{ searchResult.verses.length }} de {{ searchResult.occurrence }} versículos</p>
+  <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+  <!-- VERSÍCULO ALEATÓRIO -->
+  <!-- ═══════════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="randomVerse" class="random-verse">
+    <div class="verse-label">
+      <span class="dice">🎲</span> 
+      <strong>Versículo do Dia:</strong>
     </div>
+    
+    <div class="verse-card featured">
+      <div class="verse-reference">
+        {{ getVerseReference(randomVerse) }}
+      </div>
+      <div class="verse-text">
+        "{{ randomVerse.text }}"
+      </div>
+      <div class="verse-footer">
+        <span class="verse-meta">
+          {{ randomVerse.author }} • {{ randomVerse.group }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <p>Desenvolvido com 💙 usando Angular + ASP.NET Core + IA</p>
+    <p class="tech-stack">Angular | C# | SQLite | Entity Framework</p>
   </div>
 </div>
 

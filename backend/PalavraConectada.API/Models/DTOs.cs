@@ -84,3 +84,19 @@ public class BrasilianApiAbbrev
     public string En { get; set; } = string.Empty;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// NEW: BUSCA COMPLETA + FRASE MOTIVACIONAL
+// ═══════════════════════════════════════════════════════════════════════════
+
+public class SearchAllRequest
+{
+    public string Keyword { get; set; } = string.Empty;
+    public string Version { get; set; } = "nvi";
+}
+
+public class MotivationalRequest
+{
+    public string Text { get; set; } = string.Empty;
+    public string Version { get; set; } = "nvi";
+}
+

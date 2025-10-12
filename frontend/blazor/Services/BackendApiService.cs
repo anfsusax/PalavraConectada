@@ -9,14 +9,14 @@ public class BackendApiService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<BackendApiService> _logger;
-    private const string API_BASE_URL = "https://localhost:7001/api";
+    private const string API_BASE_URL = "http://localhost:7000/api";
 
     public BackendApiService(HttpClient httpClient, ILogger<BackendApiService> logger)
     {
         _httpClient = httpClient;
         _logger = logger;
         
-        _logger.LogInformation("🔥 BackendApiService inicializado - Usando API própria!");
+        _logger.LogInformation($"🔥 BackendApiService inicializado - Usando API própria em {API_BASE_URL}");
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -31,7 +31,7 @@ public class BackendApiService
     {
         try
         {
-            var url = $"{API_BASE_URL}/emotion/analyze";
+            var url = $"{API_BASE_URL}/Emotion/analyze";
             var response = await _httpClient.PostAsJsonAsync(url, new { text });
             response.EnsureSuccessStatusCode();
             
@@ -51,7 +51,7 @@ public class BackendApiService
     {
         try
         {
-            var url = $"{API_BASE_URL}/emotion/list";
+            var url = $"{API_BASE_URL}/Emotion/list";
             return await _httpClient.GetFromJsonAsync<List<EmotionDto>>(url);
         }
         catch (Exception ex)
@@ -72,12 +72,32 @@ public class BackendApiService
     {
         try
         {
-            var url = $"{API_BASE_URL}/verses/search?keyword={Uri.EscapeDataString(keyword)}&version={version}";
+            var url = $"{API_BASE_URL}/Verses/search?keyword={Uri.EscapeDataString(keyword)}&version={version}";
             return await _httpClient.GetFromJsonAsync<SearchVerseResponse>(url);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Erro ao buscar versículos");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Busca versículos por emoção
+    /// </summary>
+    public async Task<List<VerseDto>?> GetVersesByEmotionAsync(
+        string emotionName, 
+        string version = "nvi", 
+        int limit = 10)
+    {
+        try
+        {
+            var url = $"{API_BASE_URL}/Verses/by-emotion/{emotionName}?version={version}&limit={limit}";
+            return await _httpClient.GetFromJsonAsync<List<VerseDto>>(url);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Erro ao buscar versículos por emoção");
             return null;
         }
     }
@@ -89,7 +109,7 @@ public class BackendApiService
     {
         try
         {
-            var url = $"{API_BASE_URL}/verses/random?version={version}";
+            var url = $"{API_BASE_URL}/Verses/random?version={version}";
             return await _httpClient.GetFromJsonAsync<VerseDto>(url);
         }
         catch (Exception ex)
@@ -109,7 +129,7 @@ public class BackendApiService
     {
         try
         {
-            var url = $"{API_BASE_URL}/verses/recommend";
+            var url = $"{API_BASE_URL}/Verses/recommend";
             var response = await _httpClient.PostAsJsonAsync(url, new { text, version });
             response.EnsureSuccessStatusCode();
             
@@ -121,7 +141,133 @@ public class BackendApiService
             return null;
         }
     }
+
+    /// <summary>
+    /// Busca histórico de interações
+    /// </summary>
+    public async Task<List<object>?> GetHistoryAsync(int limit = 10)
+    {
+        try
+        {
+            var url = $"{API_BASE_URL}/Verses/history?limit={limit}";
+            return await _httpClient.GetFromJsonAsync<List<object>>(url);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Erro ao buscar histórico");
+            return null;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // BIBLIOTECA BÍBLICA
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Lista livros do Velho Testamento
+    /// </summary>
+    public async Task<BibleLibraryResponse?> GetOldTestamentAsync()
+    {
+        try
+        {
+            var url = $"{API_BASE_URL}/BibleLibrary/old-testament";
+            return await _httpClient.GetFromJsonAsync<BibleLibraryResponse>(url);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Erro ao buscar Velho Testamento");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Lista livros do Novo Testamento
+    /// </summary>
+    public async Task<BibleLibraryResponse?> GetNewTestamentAsync()
+    {
+        try
+        {
+            var url = $"{API_BASE_URL}/BibleLibrary/new-testament";
+            return await _httpClient.GetFromJsonAsync<BibleLibraryResponse>(url);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Erro ao buscar Novo Testamento");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Versículos sobre prosperidade
+    /// </summary>
+    public async Task<ThemeResponse?> GetProsperityVersesAsync()
+    {
+        try
+        {
+            var url = $"{API_BASE_URL}/BibleLibrary/theme/prosperity";
+            return await _httpClient.GetFromJsonAsync<ThemeResponse>(url);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Erro ao buscar versículos de prosperidade");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Plano de salvação
+    /// </summary>
+    public async Task<SalvationResponse?> GetSalvationVersesAsync()
+    {
+        try
+        {
+            var url = $"{API_BASE_URL}/BibleLibrary/theme/salvation";
+            return await _httpClient.GetFromJsonAsync<SalvationResponse>(url);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Erro ao buscar plano de salvação");
+            return null;
+        }
+    }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DTOs DA BIBLIOTECA BÍBLICA
+// ═══════════════════════════════════════════════════════════════════════════
+
+public class BibleLibraryResponse
+{
+    public string Testament { get; set; } = string.Empty;
+    public int TotalBooks { get; set; }
+    public List<BookDto> Books { get; set; } = new();
+}
+
+public class BookDto
+{
+    public string BookName { get; set; } = string.Empty;
+    public string BookAbbrev { get; set; } = string.Empty;
+    public string Author { get; set; } = string.Empty;
+    public string Group { get; set; } = string.Empty;
+}
+
+public class ThemeResponse
+{
+    public string Theme { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public int Count { get; set; }
+    public List<VerseDto> Verses { get; set; } = new();
+}
+
+public class SalvationResponse
+{
+    public string Theme { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public List<string> Steps { get; set; } = new();
+    public int Count { get; set; }
+    public List<VerseDto> Verses { get; set; } = new();
+}
+
 
 // ═══════════════════════════════════════════════════════════════════════════
 // DTOs - Tipagem forte com C#

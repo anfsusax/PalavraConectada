@@ -1,17 +1,24 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, of } from 'rxjs';
+import { 
+  Verse, 
+  SearchVerseResponse, 
+  Emotion, 
+  EmotionAnalysisResponse, 
+  RecommendationResponse 
+} from '../models/verse.model';
 
-// Serviço para consumir NOSSA API backend (localhost:7001)
+// Serviço para consumir NOSSA API backend (localhost:7000)
 // Agora temos controle total e inteligência de emoções!
 @Injectable({
   providedIn: 'root'
 })
 export class BackendApiService {
-  private readonly API_BASE_URL = 'https://localhost:7001/api';
+  private readonly API_BASE_URL = 'http://localhost:7000/api';
   
   constructor(private http: HttpClient) {
-    console.log('🔥 BackendApiService inicializado - Usando API própria!');
+    console.log('🔥 BackendApiService inicializado - Usando API própria em', this.API_BASE_URL);
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -23,7 +30,7 @@ export class BackendApiService {
    * Ex: "Estou triste" → { emotion: "tristeza", confidence: 100 }
    */
   analyzeEmotion(text: string): Observable<EmotionAnalysisResponse> {
-    const url = `${this.API_BASE_URL}/emotion/analyze`;
+    const url = `${this.API_BASE_URL}/Emotion/analyze`;
     return this.http.post<EmotionAnalysisResponse>(url, { text }).pipe(
       catchError(error => {
         console.error('❌ Erro ao analisar emoção:', error);
@@ -43,7 +50,7 @@ export class BackendApiService {
    * Lista todas as emoções disponíveis
    */
   getEmotions(): Observable<Emotion[]> {
-    const url = `${this.API_BASE_URL}/emotion/list`;
+    const url = `${this.API_BASE_URL}/Emotion/list`;
     return this.http.get<Emotion[]>(url).pipe(
       catchError(error => {
         console.error('❌ Erro ao buscar emoções:', error);
@@ -56,7 +63,7 @@ export class BackendApiService {
    * Busca sugestões para uma emoção específica
    */
   getSuggestions(emotionName: string): Observable<string[]> {
-    const url = `${this.API_BASE_URL}/emotion/${emotionName}/suggestions`;
+    const url = `${this.API_BASE_URL}/Emotion/${emotionName}/suggestions`;
     return this.http.get<string[]>(url).pipe(
       catchError(() => of([]))
     );
@@ -70,7 +77,7 @@ export class BackendApiService {
    * Busca versículos por palavra-chave
    */
   searchVerses(keyword: string, version: string = 'nvi'): Observable<SearchVerseResponse> {
-    const url = `${this.API_BASE_URL}/verses/search?keyword=${encodeURIComponent(keyword)}&version=${version}`;
+    const url = `${this.API_BASE_URL}/Verses/search?keyword=${encodeURIComponent(keyword)}&version=${version}`;
     return this.http.get<SearchVerseResponse>(url).pipe(
       catchError(error => {
         console.error('❌ Erro ao buscar versículos:', error);
@@ -82,9 +89,9 @@ export class BackendApiService {
   /**
    * Busca versículos por emoção
    */
-  getVersesByEmotion(emotionName: string, version: string = 'nvi', limit: number = 10): Observable<any[]> {
-    const url = `${this.API_BASE_URL}/verses/by-emotion/${emotionName}?version=${version}&limit=${limit}`;
-    return this.http.get<any[]>(url).pipe(
+  getVersesByEmotion(emotionName: string, version: string = 'nvi', limit: number = 10): Observable<Verse[]> {
+    const url = `${this.API_BASE_URL}/Verses/by-emotion/${emotionName}?version=${version}&limit=${limit}`;
+    return this.http.get<Verse[]>(url).pipe(
       catchError(() => of([]))
     );
   }
@@ -92,9 +99,9 @@ export class BackendApiService {
   /**
    * Versículo aleatório
    */
-  getRandomVerse(version: string = 'nvi'): Observable<any> {
-    const url = `${this.API_BASE_URL}/verses/random?version=${version}`;
-    return this.http.get(url).pipe(
+  getRandomVerse(version: string = 'nvi'): Observable<Verse | null> {
+    const url = `${this.API_BASE_URL}/Verses/random?version=${version}`;
+    return this.http.get<Verse>(url).pipe(
       catchError(() => of(null))
     );
   }
@@ -104,7 +111,7 @@ export class BackendApiService {
    * Combina análise de emoção + busca de versículos
    */
   getIntelligentRecommendation(text: string, version: string = 'nvi'): Observable<RecommendationResponse> {
-    const url = `${this.API_BASE_URL}/verses/recommend`;
+    const url = `${this.API_BASE_URL}/Verses/recommend`;
     return this.http.post<RecommendationResponse>(url, { text, version }).pipe(
       catchError(error => {
         console.error('❌ Erro ao gerar recomendação:', error);
@@ -120,43 +127,15 @@ export class BackendApiService {
       })
     );
   }
-}
 
-// ═══════════════════════════════════════════════════════════════════════════
-// INTERFACES - Tipagem forte
-// ═══════════════════════════════════════════════════════════════════════════
-
-export interface EmotionAnalysisResponse {
-  detectedEmotion: string;
-  confidence: number;
-  message: string;
-  recommendationType: string;
-  suggestions: string[];
-  interactionId: number;
-}
-
-export interface Emotion {
-  id: number;
-  name: string;
-  keywords: string;
-  description: string;
-  recommendationType: string;
-}
-
-export interface SearchVerseResponse {
-  keyword: string;
-  version: string;
-  count: number;
-  verses: any[];
-}
-
-export interface RecommendationResponse {
-  userInput: string;
-  detectedEmotion: string;
-  confidence: number;
-  message: string;
-  recommendedVerse: any | null;
-  alternativeVerses: any[];
-  suggestions: string[];
+  /**
+   * Busca histórico de interações
+   */
+  getHistory(limit: number = 10): Observable<any[]> {
+    const url = `${this.API_BASE_URL}/Verses/history?limit=${limit}`;
+    return this.http.get<any[]>(url).pipe(
+      catchError(() => of([]))
+    );
+  }
 }
 
