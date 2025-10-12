@@ -22,23 +22,31 @@
         </div>
     </div>
 
-    <!-- BREADCRUMB / VOLTAR -->
-    @if (!string.IsNullOrEmpty(selectedCategory) || selectedBook != null)
+    <!-- BREADCRUMB / NAVEGAÇÃO -->
+    @if (!string.IsNullOrEmpty(selectedCategory) || selectedBook != null || searchResults != null)
     {
         <div class="breadcrumb">
+            <button @onclick="GoToHome" class="btn-home">🏠 Início</button>
             <button @onclick="GoBack" class="btn-back">⬅️ Voltar</button>
-            @if (selectedBook != null && selectedChapter.HasValue)
-            {
-                <span>📖 @selectedBook / Capítulo @selectedChapter</span>
-            }
-            else if (selectedBook != null)
-            {
-                <span>📖 @selectedBook</span>
-            }
-            else
-            {
-                <span>📚 @GetCategoryName()</span>
-            }
+            
+            <span class="breadcrumb-path">
+                @if (selectedBook != null && selectedChapter.HasValue)
+                {
+                    <span>📚 Biblioteca → @GetCategoryName() → 📖 @selectedBook → Capítulo @selectedChapter</span>
+                }
+                else if (selectedBook != null)
+                {
+                    <span>📚 Biblioteca → @GetCategoryName() → 📖 @selectedBook</span>
+                }
+                else if (searchResults != null)
+                {
+                    <span>📚 Biblioteca → 🔍 Busca: "@searchKeyword"</span>
+                }
+                else
+                {
+                    <span>📚 Biblioteca → @GetCategoryName()</span>
+                }
+            </span>
         </div>
     }
 
@@ -385,6 +393,19 @@
             selectedCategory = string.Empty;
             searchResults = null;
         }
+    }
+
+    private void GoToHome()
+    {
+        selectedCategory = string.Empty;
+        selectedBook = null;
+        selectedBookAbbrev = null;
+        selectedChapter = null;
+        bookChapters = null;
+        chapterVerses = null;
+        searchResults = null;
+        searchKeyword = string.Empty;
+        showPrayer = false;
     }
 
     private string GetCategoryName()
