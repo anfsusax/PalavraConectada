@@ -9,14 +9,33 @@ public class BackendApiService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<BackendApiService> _logger;
-    private const string API_BASE_URL = "http://localhost:7000/api";
+    private readonly string API_BASE_URL;
 
     public BackendApiService(HttpClient httpClient, ILogger<BackendApiService> logger)
     {
         _httpClient = httpClient;
         _logger = logger;
         
+        // Detecta automaticamente URL da API baseado no ambiente
+        API_BASE_URL = GetApiUrl();
+        
         _logger.LogInformation($"🔥 BackendApiService inicializado - Usando API própria em {API_BASE_URL}");
+    }
+
+    /// <summary>
+    /// Detecta automaticamente a URL da API baseado no ambiente
+    /// </summary>
+    private string GetApiUrl()
+    {
+        // Se estiver em localhost, usa API local
+        var baseUri = _httpClient.BaseAddress?.ToString() ?? "";
+        if (baseUri.Contains("localhost") || baseUri.Contains("127.0.0.1"))
+        {
+            return "http://localhost:7000/api";
+        }
+        
+        // Produção: usa API no Railway
+        return "https://palavraconectada-production.up.railway.app/api";
     }
 
     // ═══════════════════════════════════════════════════════════════════════════

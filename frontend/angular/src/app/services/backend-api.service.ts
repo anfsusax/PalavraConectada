@@ -9,16 +9,29 @@ import {
   RecommendationResponse 
 } from '../models/verse.model';
 
-// Serviço para consumir NOSSA API backend (localhost:7000)
-// Agora temos controle total e inteligência de emoções!
+// Serviço para consumir NOSSA API backend
+// Detecta automaticamente ambiente: desenvolvimento ou produção
 @Injectable({
   providedIn: 'root'
 })
 export class BackendApiService {
-  private readonly API_BASE_URL = 'http://localhost:7000/api';
+  private readonly API_BASE_URL = this.getApiUrl();
   
   constructor(private http: HttpClient) {
     console.log('🔥 BackendApiService inicializado - Usando API própria em', this.API_BASE_URL);
+  }
+
+  /**
+   * Detecta automaticamente a URL da API baseado no ambiente
+   */
+  private getApiUrl(): string {
+    // Se estiver em localhost, usa API local
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:7000/api';
+    }
+    
+    // Produção: usa API no Railway
+    return 'https://palavraconectada-production.up.railway.app/api';
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
