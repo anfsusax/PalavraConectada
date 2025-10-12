@@ -230,6 +230,57 @@ public class BackendApiService
             return null;
         }
     }
+
+    /// <summary>
+    /// Busca capítulos de um livro específico
+    /// </summary>
+    public async Task<BookChaptersResponse?> GetBookChaptersAsync(string bookAbbrev)
+    {
+        try
+        {
+            var url = $"{API_BASE_URL}/BibleLibrary/book/{bookAbbrev}/chapters";
+            return await _httpClient.GetFromJsonAsync<BookChaptersResponse>(url);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Erro ao buscar capítulos do livro {BookAbbrev}", bookAbbrev);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Busca versículos de um capítulo específico
+    /// </summary>
+    public async Task<ChapterVersesResponse?> GetChapterVersesAsync(string bookAbbrev, int chapterNumber)
+    {
+        try
+        {
+            var url = $"{API_BASE_URL}/BibleLibrary/book/{bookAbbrev}/chapter/{chapterNumber}";
+            return await _httpClient.GetFromJsonAsync<ChapterVersesResponse>(url);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Erro ao buscar versículos do capítulo {Chapter} do livro {BookAbbrev}", chapterNumber, bookAbbrev);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Busca por palavra-chave na biblioteca
+    /// </summary>
+    public async Task<SearchLibraryResponse?> SearchLibraryAsync(string keyword)
+    {
+        try
+        {
+            var url = $"{API_BASE_URL}/BibleLibrary/search?keyword={Uri.EscapeDataString(keyword)}";
+            return await _httpClient.GetFromJsonAsync<SearchLibraryResponse>(url);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Erro ao buscar por '{Keyword}'", keyword);
+            return null;
+        }
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -256,6 +307,7 @@ public class ThemeResponse
     public string Theme { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public int Count { get; set; }
+    public int TotalAvailable { get; set; }
     public List<VerseDto> Verses { get; set; } = new();
 }
 
@@ -264,6 +316,31 @@ public class SalvationResponse
     public string Theme { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public List<string> Steps { get; set; } = new();
+    public int Count { get; set; }
+    public int TotalAvailable { get; set; }
+    public List<VerseDto> Verses { get; set; } = new();
+}
+
+public class BookChaptersResponse
+{
+    public string BookAbbrev { get; set; } = string.Empty;
+    public string BookName { get; set; } = string.Empty;
+    public int TotalChapters { get; set; }
+    public List<int> Chapters { get; set; } = new();
+}
+
+public class ChapterVersesResponse
+{
+    public string BookAbbrev { get; set; } = string.Empty;
+    public string BookName { get; set; } = string.Empty;
+    public int Chapter { get; set; }
+    public int Count { get; set; }
+    public List<VerseDto> Verses { get; set; } = new();
+}
+
+public class SearchLibraryResponse
+{
+    public string Keyword { get; set; } = string.Empty;
     public int Count { get; set; }
     public List<VerseDto> Verses { get; set; } = new();
 }

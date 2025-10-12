@@ -3,51 +3,78 @@
 @inject BackendApiService BackendApi
 @inject NavigationManager Navigation
 
-<!-- Biblioteca Bíblica - Menu completo da Palavra de Deus -->
 <PageTitle>Biblioteca Bíblica 📖</PageTitle>
 
 <div class="bible-library-container">
     <div class="header">
         <h1>📖 Biblioteca Bíblica</h1>
         <p class="subtitle">Explore a Palavra de Deus organizada por testamentos e temas</p>
+        
+        <!-- BUSCA GLOBAL -->
+        <div class="search-bar">
+            <input type="text" 
+                   @bind="searchKeyword" 
+                   @bind:event="oninput"
+                   @onkeyup="HandleSearchKey"
+                   placeholder="🔍 Buscar por palavra-chave..." 
+                   class="search-input" />
+            <button @onclick="SearchLibrary" disabled="@isLoading" class="btn-search">Buscar</button>
+        </div>
     </div>
+
+    <!-- BREADCRUMB / VOLTAR -->
+    @if (!string.IsNullOrEmpty(selectedCategory) || selectedBook != null)
+    {
+        <div class="breadcrumb">
+            <button @onclick="GoBack" class="btn-back">⬅️ Voltar</button>
+            @if (selectedBook != null && selectedChapter.HasValue)
+            {
+                <span>📖 @selectedBook / Capítulo @selectedChapter</span>
+            }
+            else if (selectedBook != null)
+            {
+                <span>📖 @selectedBook</span>
+            }
+            else
+            {
+                <span>📚 @GetCategoryName()</span>
+            }
+        </div>
+    }
 
     <!-- MENU DE CATEGORIAS -->
-    <div class="categories-grid">
-        
-        <!-- VELHO TESTAMENTO -->
-        <div class="category-card" @onclick='() => SelectCategory("vt")'>
-            <div class="category-icon">📜</div>
-            <h3>Velho Testamento</h3>
-            <p>39 livros da criação até os profetas</p>
-            <span class="badge-vt">Lei • Profetas • Escritos</span>
-        </div>
+    @if (string.IsNullOrEmpty(selectedCategory) && searchResults == null)
+    {
+        <div class="categories-grid">
+            <div class="category-card" @onclick='() => SelectCategory("vt")'>
+                <div class="category-icon">📜</div>
+                <h3>Velho Testamento</h3>
+                <p>39 livros da criação até os profetas</p>
+                <span class="badge-vt">Lei • Profetas • Escritos</span>
+            </div>
 
-        <!-- NOVO TESTAMENTO -->
-        <div class="category-card" @onclick='() => SelectCategory("nt")'>
-            <div class="category-icon">✝️</div>
-            <h3>Novo Testamento</h3>
-            <p>27 livros sobre Jesus e a Igreja</p>
-            <span class="badge-nt">Evangelhos • Cartas • Apocalipse</span>
-        </div>
+            <div class="category-card" @onclick='() => SelectCategory("nt")'>
+                <div class="category-icon">✝️</div>
+                <h3>Novo Testamento</h3>
+                <p>27 livros sobre Jesus e a Igreja</p>
+                <span class="badge-nt">Evangelhos • Cartas • Apocalipse</span>
+            </div>
 
-        <!-- RIQUEZA & PROSPERIDADE -->
-        <div class="category-card prosperity" @onclick='() => SelectCategory("prosperity")'>
-            <div class="category-icon">💰</div>
-            <h3>Riqueza & Prosperidade</h3>
-            <p>Bênçãos e abundância em Deus</p>
-            <span class="badge-theme">Tema Especial</span>
-        </div>
+            <div class="category-card prosperity" @onclick='() => SelectCategory("prosperity")'>
+                <div class="category-icon">💰</div>
+                <h3>Riqueza & Prosperidade</h3>
+                <p>Bênçãos e abundância em Deus</p>
+                <span class="badge-theme">Tema Especial</span>
+            </div>
 
-        <!-- SALVAÇÃO EM JESUS -->
-        <div class="category-card salvation" @onclick='() => SelectCategory("salvation")'>
-            <div class="category-icon">✨</div>
-            <h3>Salvação em Jesus</h3>
-            <p>O plano de Deus para sua vida</p>
-            <span class="badge-salvation">Essencial</span>
+            <div class="category-card salvation" @onclick='() => SelectCategory("salvation")'>
+                <div class="category-icon">✨</div>
+                <h3>Salvação em Jesus</h3>
+                <p>O plano de Deus para sua vida</p>
+                <span class="badge-salvation">Essencial</span>
+            </div>
         </div>
-
-    </div>
+    }
 
     <!-- LOADING -->
     @if (isLoading)
@@ -58,167 +85,200 @@
         </div>
     }
 
-    <!-- CONTEÚDO DA CATEGORIA SELECIONADA -->
-    @if (!string.IsNullOrEmpty(selectedCategory) && !isLoading)
+    <!-- RESULTADOS DA BUSCA -->
+    @if (searchResults != null)
     {
-        <div class="category-content">
+        <div class="search-results">
+            <h2>🔍 Resultados para "@searchKeyword"</h2>
+            <p class="count">@searchResults.Count resultado(s) encontrado(s)</p>
             
-            <!-- VELHO TESTAMENTO -->
-            @if (selectedCategory == "vt" && vtBooks != null)
+            @if (searchResults.Count > 0)
             {
-                <div class="testament-section">
-                    <div class="section-header">
-                        <h2>📜 Velho Testamento</h2>
-                        <p>@vtBooks.Count livros encontrados</p>
-                    </div>
-
-                    <div class="books-grid">
-                        @foreach (var book in vtBooks)
-                        {
-                            <div class="book-card">
-                                <h4>@book.BookName</h4>
-                                <p class="book-meta">@book.Author • @book.Group</p>
-                            </div>
-                        }
-                    </div>
-                </div>
-            }
-
-            <!-- NOVO TESTAMENTO -->
-            @if (selectedCategory == "nt" && ntBooks != null)
-            {
-                <div class="testament-section">
-                    <div class="section-header">
-                        <h2>✝️ Novo Testamento</h2>
-                        <p>@ntBooks.Count livros encontrados</p>
-                    </div>
-
-                    <div class="books-grid">
-                        @foreach (var book in ntBooks)
-                        {
-                            <div class="book-card">
-                                <h4>@book.BookName</h4>
-                                <p class="book-meta">@book.Author • @book.Group</p>
-                            </div>
-                        }
-                    </div>
-                </div>
-            }
-
-            <!-- RIQUEZA & PROSPERIDADE -->
-            @if (selectedCategory == "prosperity" && prosperityVerses != null)
-            {
-                <div class="theme-section prosperity">
-                    <div class="section-header">
-                        <h2>💰 Riqueza & Prosperidade</h2>
-                        <p>Versículos sobre bênçãos e abundância</p>
-                    </div>
-
-                    <div class="verses-list">
-                        @foreach (var verse in prosperityVerses)
-                        {
-                            <div class="verse-card-library">
-                                <div class="verse-reference">@verse.BookName @verse.Chapter:@verse.Number</div>
-                                <div class="verse-text">"@verse.Text"</div>
-                                <div class="verse-author">@verse.Author</div>
-                            </div>
-                        }
-                    </div>
-                </div>
-            }
-
-            <!-- SALVAÇÃO EM JESUS -->
-            @if (selectedCategory == "salvation" && salvationData != null)
-            {
-                <div class="theme-section salvation">
-                    <div class="section-header">
-                        <h2>✨ Plano de Salvação</h2>
-                        <p>@salvationData.Description</p>
-                    </div>
-
-                    <!-- PASSOS DA SALVAÇÃO -->
-                    @if (salvationData.Steps != null)
+                <div class="verses-container">
+                    @foreach (var verse in searchResults.Verses)
                     {
-                        <div class="salvation-steps">
-                            <h3>📋 Os Passos da Salvação:</h3>
-                            <ol class="steps-list">
-                                @foreach (var step in salvationData.Steps)
-                                {
-                                    <li>@step</li>
-                                }
-                            </ol>
-                        </div>
-                    }
-
-                    <!-- VERSÍCULOS -->
-                    @if (salvationData.Verses != null)
-                    {
-                        <div class="verses-list">
-                            @foreach (var verse in salvationData.Verses)
-                            {
-                                <div class="verse-card-library salvation">
-                                    <div class="verse-reference">@verse.BookName @verse.Chapter:@verse.Number</div>
-                                    <div class="verse-text">"@verse.Text"</div>
-                                    <div class="verse-author">@verse.Author</div>
-                                </div>
-                            }
-                        </div>
-                    }
-
-                    <!-- CHAMADO -->
-                    <div class="salvation-call">
-                        <h3>✝️ Aceite Jesus Hoje!</h3>
-                        <p>Se você crê que Jesus morreu por você e ressuscitou, confesse com sua boca e creia em seu coração. A salvação é um presente de Deus pela graça!</p>
-                        <button class="btn-salvation" @onclick="ShowPrayer">🙏 Oração de Salvação</button>
-                    </div>
-
-                    @if (showPrayer)
-                    {
-                        <div class="prayer-box">
-                            <h4>🙏 Ore Comigo:</h4>
-                            <p class="prayer-text">
-                                "Senhor Jesus, reconheço que sou pecador e preciso de Ti.
-                                Creio que morreste na cruz pelos meus pecados e ressuscitaste ao terceiro dia.
-                                Perdoa os meus pecados e vem morar em meu coração.
-                                Quero Te seguir como meu Senhor e Salvador.
-                                Em nome de Jesus, amém!"
-                            </p>
-                            <p class="congratulations">🎉 Se você fez esta oração com sinceridade, você agora é filho(a) de Deus! Bem-vindo(a) à família!</p>
+                        <div class="verse-card">
+                            <div class="verse-reference">@GetVerseReference(verse)</div>
+                            <div class="verse-text">"@verse.Text"</div>
                         </div>
                     }
                 </div>
             }
-
+            else
+            {
+                <p class="no-results">Nenhum versículo encontrado com essa palavra.</p>
+            }
         </div>
     }
 
-    <!-- VOLTAR -->
-    @if (!string.IsNullOrEmpty(selectedCategory))
+    <!-- LISTA DE LIVROS (VT/NT) -->
+    @if ((selectedCategory == "vt" || selectedCategory == "nt") && selectedBook == null)
     {
-        <div class="back-button-container">
-            <button class="btn-back" @onclick="ClearSelection">
-                ← Voltar para Categorias
+        <div class="books-list">
+            <h2>@GetCategoryName()</h2>
+            <p class="count">@books.Count livro(s)</p>
+            
+            <div class="books-grid">
+                @foreach (var book in books)
+                {
+                    <button @onclick="() => ViewBook(book.BookName, book.BookAbbrev)" class="book-card">
+                        <div class="book-name">@book.BookName</div>
+                        <div class="book-details">
+                            <span>✍️ @book.Author</span>
+                            <span>📂 @book.Group</span>
+                        </div>
+                    </button>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- CAPÍTULOS DE UM LIVRO -->
+    @if (selectedBook != null && !selectedChapter.HasValue)
+    {
+        <div class="chapters-view">
+            <h2>📖 @selectedBook</h2>
+            <p class="count">@bookChapters?.TotalChapters capítulo(s)</p>
+            
+            <div class="chapters-grid">
+                @if (bookChapters != null)
+                {
+                    @foreach (var chapter in bookChapters.Chapters)
+                    {
+                        <button @onclick="() => ViewChapter(chapter)" class="chapter-card">
+                            <div class="chapter-number">@chapter</div>
+                        </button>
+                    }
+                }
+            </div>
+        </div>
+    }
+
+    <!-- VERSÍCULOS DE UM CAPÍTULO -->
+    @if (selectedChapter.HasValue && chapterVerses != null)
+    {
+        <div class="chapter-verses">
+            <h2>📜 @selectedBook - Capítulo @selectedChapter</h2>
+            <p class="count">@chapterVerses.Count versículo(s)</p>
+            
+            <div class="verses-container">
+                @foreach (var verse in chapterVerses.Verses)
+                {
+                    <div class="verse-card">
+                        <span class="verse-number">@verse.Number</span>
+                        <span class="verse-text">@verse.Text</span>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- TEMA: PROSPERIDADE -->
+    @if (selectedCategory == "prosperity" && prosperityVerses != null)
+    {
+        <div class="theme-view prosperity-theme">
+            <h2>💰 Riqueza & Prosperidade</h2>
+            <p class="description">@prosperityVerses.Description</p>
+            <p class="count">Mostrando @prosperityVerses.Count de @prosperityVerses.TotalAvailable versículos</p>
+            
+            <div class="verses-container">
+                @foreach (var verse in prosperityVerses.Verses)
+                {
+                    <div class="verse-card">
+                        <div class="verse-reference">@GetVerseReference(verse)</div>
+                        <div class="verse-text">"@verse.Text"</div>
+                    </div>
+                }
+            </div>
+
+            <button @onclick="() => SelectCategory(\"prosperity\")" class="btn-reload">
+                🔄 Carregar Mais Versículos
             </button>
+        </div>
+    }
+
+    <!-- TEMA: SALVAÇÃO -->
+    @if (selectedCategory == "salvation" && salvationData != null)
+    {
+        <div class="theme-view salvation-theme">
+            <h2>✨ Salvação em Jesus Cristo</h2>
+            <p class="description">@salvationData.Description</p>
+            
+            <!-- PASSOS DA SALVAÇÃO -->
+            <div class="salvation-steps">
+                <h3>📖 O Plano de Salvação:</h3>
+                @foreach (var step in salvationData.Steps)
+                {
+                    <div class="step">@step</div>
+                }
+            </div>
+
+            <p class="count">Mostrando @salvationData.Count de @salvationData.TotalAvailable versículos</p>
+
+            <!-- VERSÍCULOS -->
+            <div class="verses-container">
+                @foreach (var verse in salvationData.Verses)
+                {
+                    <div class="verse-card">
+                        <div class="verse-reference">@GetVerseReference(verse)</div>
+                        <div class="verse-text">"@verse.Text"</div>
+                    </div>
+                }
+            </div>
+
+            <button @onclick="() => SelectCategory(\"salvation\")" class="btn-reload">
+                🔄 Carregar Mais Versículos
+            </button>
+
+            <!-- ORAÇÃO DE SALVAÇÃO -->
+            <div class="salvation-prayer">
+                <button @onclick="() => showPrayer = !showPrayer" class="btn-prayer">
+                    🙏 @(showPrayer ? "Esconder Oração" : "Fazer a Oração de Salvação") 🙏
+                </button>
+
+                @if (showPrayer)
+                {
+                    <div class="prayer-box">
+                        <h3>Minha Oração de Salvação</h3>
+                        <p>
+                            "Senhor Jesus, eu reconheço que sou pecador(a) e que preciso do Teu perdão.
+                            Eu creio que morreste na cruz por mim e ressuscitaste ao terceiro dia.
+                            Hoje, eu abro meu coração e Te recebo como meu único Senhor e Salvador.
+                            Lava-me de todo pecado e escreve meu nome no Livro da Vida.
+                            Eu Te agradeço pela salvação e pela vida eterna. Amém."
+                        </p>
+                        <p class="welcome-message">🎉 Bem-vindo(a) à família de Deus! 🎉</p>
+                    </div>
+                }
+            </div>
         </div>
     }
 </div>
 
 @code {
+    private string searchKeyword = string.Empty;
     private string selectedCategory = string.Empty;
+    private string? selectedBook = null;
+    private string? selectedBookAbbrev = null;
+    private int? selectedChapter = null;
     private bool isLoading = false;
     private bool showPrayer = false;
 
     // Dados
-    private List<BookDto>? vtBooks;
-    private List<BookDto>? ntBooks;
-    private List<VerseDto>? prosperityVerses;
+    private List<BookDto> books = new();
+    private BookChaptersResponse? bookChapters;
+    private ChapterVersesResponse? chapterVerses;
+    private ThemeResponse? prosperityVerses;
     private SalvationResponse? salvationData;
+    private SearchLibraryResponse? searchResults;
 
     private async Task SelectCategory(string category)
     {
         selectedCategory = category;
+        selectedBook = null;
+        selectedChapter = null;
+        searchResults = null;
         isLoading = true;
-        showPrayer = false;
 
         try
         {
@@ -226,17 +286,16 @@
             {
                 case "vt":
                     var vtResponse = await BackendApi.GetOldTestamentAsync();
-                    vtBooks = vtResponse?.Books ?? new List<BookDto>();
+                    books = vtResponse?.Books ?? new List<BookDto>();
                     break;
 
                 case "nt":
                     var ntResponse = await BackendApi.GetNewTestamentAsync();
-                    ntBooks = ntResponse?.Books ?? new List<BookDto>();
+                    books = ntResponse?.Books ?? new List<BookDto>();
                     break;
 
                 case "prosperity":
-                    var prosperityResponse = await BackendApi.GetProsperityVersesAsync();
-                    prosperityVerses = prosperityResponse?.Verses ?? new List<VerseDto>();
+                    prosperityVerses = await BackendApi.GetProsperityVersesAsync();
                     break;
 
                 case "salvation":
@@ -244,9 +303,21 @@
                     break;
             }
         }
-        catch (Exception ex)
+        finally
         {
-            Console.WriteLine($"Erro ao carregar categoria: {ex.Message}");
+            isLoading = false;
+        }
+    }
+
+    private async Task ViewBook(string bookName, string bookAbbrev)
+    {
+        selectedBook = bookName;
+        selectedBookAbbrev = bookAbbrev;
+        isLoading = true;
+
+        try
+        {
+            bookChapters = await BackendApi.GetBookChaptersAsync(bookAbbrev);
         }
         finally
         {
@@ -254,15 +325,82 @@
         }
     }
 
-    private void ClearSelection()
+    private async Task ViewChapter(int chapterNumber)
     {
-        selectedCategory = string.Empty;
-        showPrayer = false;
+        selectedChapter = chapterNumber;
+        isLoading = true;
+
+        try
+        {
+            chapterVerses = await BackendApi.GetChapterVersesAsync(selectedBookAbbrev!, chapterNumber);
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
 
-    private void ShowPrayer()
+    private async Task SearchLibrary()
     {
-        showPrayer = true;
+        if (string.IsNullOrWhiteSpace(searchKeyword))
+            return;
+
+        selectedCategory = string.Empty;
+        selectedBook = null;
+        isLoading = true;
+
+        try
+        {
+            searchResults = await BackendApi.SearchLibraryAsync(searchKeyword);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleSearchKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchLibrary();
+        }
+    }
+
+    private void GoBack()
+    {
+        if (selectedChapter.HasValue)
+        {
+            selectedChapter = null;
+            chapterVerses = null;
+        }
+        else if (selectedBook != null)
+        {
+            selectedBook = null;
+            selectedBookAbbrev = null;
+            bookChapters = null;
+        }
+        else
+        {
+            selectedCategory = string.Empty;
+            searchResults = null;
+        }
+    }
+
+    private string GetCategoryName()
+    {
+        return selectedCategory switch
+        {
+            "vt" => "📜 Velho Testamento",
+            "nt" => "✝️ Novo Testamento",
+            "prosperity" => "💰 Riqueza & Prosperidade",
+            "salvation" => "✨ Salvação em Jesus",
+            _ => "📚 Biblioteca Bíblica"
+        };
+    }
+
+    private string GetVerseReference(VerseDto verse)
+    {
+        return $"{verse.BookName} {verse.Chapter}:{verse.Number}";
     }
 }
-
