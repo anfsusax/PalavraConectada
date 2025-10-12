@@ -12,6 +12,13 @@
 
 ## 🚀 Início Rápido
 
+### **🏠 Página Home (Escolha sua Tecnologia):**
+```bash
+# Abra o arquivo index.html no navegador
+start index.html
+```
+→ **Escolha entre Blazor e Angular com design moderno!**
+
 ### **1. Backend API (C#):**
 ```bash
 cd backend/PalavraConectada.API
@@ -42,6 +49,7 @@ npm start
 
 👉 **[`docs/INDEX.md`](docs/INDEX.md)** - Índice completo de toda documentação  
 👉 **[`docs/INICIO-RAPIDO.md`](docs/INICIO-RAPIDO.md)** - Começar agora  
+👉 **[`docs/HOME-PAGE-GUIDE.md`](docs/HOME-PAGE-GUIDE.md)** - Guia da página home  
 👉 **[`docs/TESTE-BIBLIOTECA-BIBLICA.md`](docs/TESTE-BIBLIOTECA-BIBLICA.md)** - Testar nova feature
 
 ---
@@ -50,6 +58,7 @@ npm start
 
 ```
 PalavraConectada/
+├── index.html                       # 🏠 PÁGINA HOME - Escolha Blazor ou Angular
 ├── backend/                         # 🔥 API C# com IA
 │   └── PalavraConectada.API/
 │       ├── Controllers/             # AdminController, BibleLibraryController, EmotionController, VersesController
