@@ -24,7 +24,7 @@ builder.Services.AddSwaggerGen(options =>
     options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
     {
         Title = "Palavra Conectada API",
-        Version = "v1",
+        Version = "v1.1",
         Description = @"
 # 📖 API Palavra Conectada
 
@@ -35,13 +35,14 @@ API inteligente que conecta emoções humanas à Palavra de Deus.
 - 📖 **Busca Inteligente:** Recomenda versículos baseado em emoções
 - 🎲 **Versículo Aleatório:** Deixe Deus surpreender
 - 📊 **Sistema de Fallback:** Múltiplas fontes de dados
+- 🚀 **Migração Automática:** Importa 31.102 versículos com um clique
 
 ## 🙏 Versículo:
 > 'Lâmpada para os meus pés é a tua palavra e luz para o meu caminho.' - Salmos 119:105
         ",
         Contact = new Microsoft.OpenApi.Models.OpenApiContact
         {
-            Name = "Palavra Conectada",
+            Name = "Palavra Conectada - Alex Feitoza",
             Email = "contato@palavraconectada.com"
         }
     });
@@ -53,6 +54,10 @@ API inteligente que conecta emoções humanas à Palavra de Deus.
     {
         options.IncludeXmlComments(xmlPath);
     }
+
+    // Configurar para usar JSON schema correto
+    options.UseAllOfToExtendReferenceSchemas();
+    options.UseAllOfForInheritance();
 });
 
 // Entity Framework + SQLite
