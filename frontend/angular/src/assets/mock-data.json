@@ -1,0 +1,69 @@
+{
+  "searchResult": {
+    "occurrence": 3,
+    "version": "nvi",
+    "verses": [
+      {
+        "book": {
+          "abbrev": {
+            "pt": "jo",
+            "en": "jn"
+          },
+          "name": "João",
+          "author": "João",
+          "group": "Novo Testamento",
+          "version": "nvi"
+        },
+        "chapter": 3,
+        "number": 16,
+        "text": "Porque Deus tanto amou o mundo que deu o seu Filho Unigênito, para que todo o que nele crer não pereça, mas tenha a vida eterna."
+      },
+      {
+        "book": {
+          "abbrev": {
+            "pt": "1jo",
+            "en": "1jn"
+          },
+          "name": "1 João",
+          "author": "João",
+          "group": "Novo Testamento",
+          "version": "nvi"
+        },
+        "chapter": 4,
+        "number": 8,
+        "text": "Quem não ama não conhece a Deus, porque Deus é amor."
+      },
+      {
+        "book": {
+          "abbrev": {
+            "pt": "1co",
+            "en": "1co"
+          },
+          "name": "1 Coríntios",
+          "author": "Paulo",
+          "group": "Novo Testamento",
+          "version": "nvi"
+        },
+        "chapter": 13,
+        "number": 13,
+        "text": "Assim, permanecem agora estes três: a fé, a esperança e o amor. O maior deles, porém, é o amor."
+      }
+    ]
+  },
+  "randomVerse": {
+    "book": {
+      "abbrev": {
+        "pt": "sl",
+        "en": "ps"
+      },
+      "name": "Salmos",
+      "author": "Vários",
+      "group": "Antigo Testamento",
+      "version": "nvi"
+    },
+    "chapter": 23,
+    "number": 1,
+    "text": "O Senhor é o meu pastor; de nada terei falta."
+  }
+}
+

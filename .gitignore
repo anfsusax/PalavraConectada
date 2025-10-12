@@ -57,3 +57,9 @@ Thumbs.db
 *.log
 logs/
 
+# Referências externas (não versionar código de terceiros)
+referencias/
+
+# Scripts temporários de organização
+scripts/
+

@@ -7,25 +7,49 @@ namespace PalavraConectada.Services
     public class BibleApiService
     {
         private readonly HttpClient _httpClient;
+        private readonly BibleApiMockService _mockService;
         private const string API_BASE_URL = "https://www.abibliadigital.com.br/api";
+        
+        // ⚠️ MODO DE DESENVOLVIMENTO: true = usa dados mock, false = usa API real
+        private const bool USE_MOCK = true; // MUDE PARA false quando a API estiver funcionando
 
-        public BibleApiService(HttpClient httpClient)
+        public BibleApiService(HttpClient httpClient, BibleApiMockService mockService)
         {
             _httpClient = httpClient;
+            _mockService = mockService;
+            
+            if (USE_MOCK)
+            {
+                Console.WriteLine("🎭 MODO MOCK ATIVADO - Usando dados de exemplo");
+                Console.WriteLine("Para usar a API real, altere USE_MOCK = false em BibleApiService.cs");
+            }
         }
 
-        // Busca versículos por palavra-chave
+        // Busca versículos por palavra-chave (POST conforme documentação)
         public async Task<SearchResult?> SearchVersesAsync(string searchTerm, string version = "nvi")
         {
+            // Se modo mock, usa dados de exemplo
+            if (USE_MOCK)
+            {
+                return await _mockService.SearchVersesAsync(searchTerm, version);
+            }
+            
+            // Senão, usa API real
             try
             {
-                var url = $"{API_BASE_URL}/verses/{version}/search/{Uri.EscapeDataString(searchTerm)}";
-                var result = await _httpClient.GetFromJsonAsync<SearchResult>(url);
+                var url = $"{API_BASE_URL}/verses/search";
+                var body = new { version = version, search = searchTerm };
+                
+                var response = await _httpClient.PostAsJsonAsync(url, body);
+                response.EnsureSuccessStatusCode();
+                
+                var result = await response.Content.ReadFromJsonAsync<SearchResult>();
                 return result ?? new SearchResult();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Erro ao buscar versículos: {ex.Message}");
+                Console.WriteLine($"❌ Erro ao buscar versículos: {ex.Message}");
+                Console.WriteLine("Dica: A API pode estar offline. Ative o modo mock!");
                 return new SearchResult();
             }
         }
@@ -48,6 +72,11 @@ namespace PalavraConectada.Services
         // Busca versículo aleatório - como "abrir a Bíblia e deixar Deus falar"
         public async Task<Verse?> GetRandomVerseAsync(string version = "nvi")
         {
+            if (USE_MOCK)
+            {
+                return await _mockService.GetRandomVerseAsync(version);
+            }
+            
             try
             {
                 var url = $"{API_BASE_URL}/verses/{version}/random";
@@ -55,8 +84,8 @@ namespace PalavraConectada.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Erro ao buscar versículo aleatório: {ex.Message}");
-                return null;
+                Console.WriteLine($"❌ Erro ao buscar versículo aleatório: {ex.Message}");
+                return await _mockService.GetRandomVerseAsync(version);
             }
         }
 
