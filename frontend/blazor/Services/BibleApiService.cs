@@ -10,8 +10,8 @@ namespace PalavraConectada.Services
         private readonly BibleApiMockService _mockService;
         private const string API_BASE_URL = "https://www.abibliadigital.com.br/api";
         
-        // ⚠️ MODO DE DESENVOLVIMENTO: true = usa dados mock, false = usa API real
-        private const bool USE_MOCK = true; // MUDE PARA false quando a API estiver funcionando
+        // ⚠️ MODO: false = usa NOSSO BACKEND (localhost:7001)
+        private const bool USE_MOCK = false; // AGORA temos nosso próprio backend! 🔥
 
         public BibleApiService(HttpClient httpClient, BibleApiMockService mockService)
         {
