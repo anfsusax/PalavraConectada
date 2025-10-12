@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📖 Palavra Conectada AI - Escolha sua Tecnologia</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .header {
+            margin-bottom: 3rem;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .verse {
+            font-style: italic;
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        .tech-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tech-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .tech-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .tech-image {
+            width: 100%;
+            height: 300px;
+            border-radius: 15px;
+            margin-bottom: 1.5rem;
+            transition: transform 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tech-card:hover .tech-image {
+            transform: scale(1.05);
+        }
+
+        /* BLAZOR HERO IMAGE */
+        .blazor-image {
+            background: linear-gradient(135deg, #512bd4 0%, #7c3aed 50%, #a855f7 100%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .blazor-hero {
+            text-align: center;
+            color: white;
+            position: relative;
+            z-index: 2;
+        }
+
+        .blazor-hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: blazorGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes blazorGlow {
+            0% { opacity: 0.3; transform: scale(1); }
+            100% { opacity: 0.6; transform: scale(1.1); }
+        }
+
+        /* ANGULAR HERO IMAGE */
+        .angular-image {
+            background: linear-gradient(135deg, #dd0031 0%, #c3002f 50%, #a00026 100%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .angular-hero {
+            text-align: center;
+            color: white;
+            position: relative;
+            z-index: 2;
+        }
+
+        .angular-hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: angularGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes angularGlow {
+            0% { opacity: 0.3; transform: scale(1) rotate(0deg); }
+            100% { opacity: 0.6; transform: scale(1.1) rotate(180deg); }
+        }
+
+        .hero-text {
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 0.5rem;
+            letter-spacing: 2px;
+        }
+
+        .hero-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        /* Adiciona partículas flutuantes */
+        .blazor-image::after {
+            content: '💜';
+            position: absolute;
+            top: 20%;
+            left: 10%;
+            font-size: 2rem;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .blazor-image::before {
+            content: '🔥';
+            position: absolute;
+            top: 60%;
+            right: 15%;
+            font-size: 1.5rem;
+            animation: float 3s ease-in-out infinite reverse;
+        }
+
+        .angular-image::after {
+            content: '🅰️';
+            position: absolute;
+            top: 25%;
+            right: 10%;
+            font-size: 2rem;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .angular-image::before {
+            content: '⚡';
+            position: absolute;
+            top: 65%;
+            left: 15%;
+            font-size: 1.5rem;
+            animation: float 3s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .tech-title {
+            font-size: 2rem;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .tech-description {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .tech-features {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .tech-features li {
+            color: #34495e;
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .tech-features li::before {
+            content: '✨';
+            position: absolute;
+            left: 0;
+        }
+
+        .tech-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2.5rem;
+            border-radius: 25px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .tech-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .blazor-button {
+            background: linear-gradient(135deg, #512bd4 0%, #7c3aed 100%);
+        }
+
+        .blazor-button:hover {
+            box-shadow: 0 8px 20px rgba(81, 43, 212, 0.4);
+        }
+
+        .angular-button {
+            background: linear-gradient(135deg, #dd0031 0%, #c3002f 100%);
+        }
+
+        .angular-button:hover {
+            box-shadow: 0 8px 20px rgba(221, 0, 49, 0.4);
+        }
+
+        .footer {
+            color: white;
+            margin-top: 3rem;
+            opacity: 0.8;
+        }
+
+        .footer p {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .github-link {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            transition: opacity 0.3s ease;
+        }
+
+        .github-link:hover {
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .tech-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            
+            .tech-card {
+                padding: 1.5rem;
+            }
+            
+            .tech-image {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📖 Palavra Conectada AI</h1>
+            <p>Escolha sua tecnologia favorita e conecte-se à Palavra de Deus com Inteligência Artificial</p>
+            <div class="verse">
+                "Lâmpada para os meus pés é a tua palavra e luz para o meu caminho" - Salmos 119:105
+            </div>
+        </div>
+
+        <div class="tech-grid">
+            <!-- BLAZOR -->
+            <div class="tech-card" onclick="window.open('http://localhost:5292', '_blank')">
+                <div class="tech-image blazor-image">
+                    <div class="hero-image blazor-hero">
+                        <div class="hero-text">🔥 BLAZOR</div>
+                        <div class="hero-subtitle">C# WebAssembly</div>
+                    </div>
+                </div>
+                <h2 class="tech-title">🔥 Blazor WebAssembly</h2>
+                <p class="tech-description">
+                    Aplicação web moderna construída com C# e WebAssembly. 
+                    Biblioteca Bíblica completa com navegação inteligente e busca avançada.
+                </p>
+                <ul class="tech-features">
+                    <li>Biblioteca Bíblica Completa (VT/NT + Temas)</li>
+                    <li>Navegação por Livros → Capítulos → Versículos</li>
+                    <li>Busca Inteligente com IA</li>
+                    <li>Versículos Aleatórios (Prosperidade/Salvação)</li>
+                    <li>Oração de Salvação Interativa</li>
+                    <li>Design Moderno e Responsivo</li>
+                </ul>
+                <button class="tech-button blazor-button">
+                    🚀 Abrir Blazor App
+                </button>
+            </div>
+
+            <!-- ANGULAR -->
+            <div class="tech-card" onclick="window.open('http://localhost:4200', '_blank')">
+                <div class="tech-image angular-image">
+                    <div class="hero-image angular-hero">
+                        <div class="hero-text">🅰️ ANGULAR</div>
+                        <div class="hero-subtitle">TypeScript Framework</div>
+                    </div>
+                </div>
+                <h2 class="tech-title">🅰️ Angular TypeScript</h2>
+                <p class="tech-description">
+                    Framework web robusto com TypeScript. 
+                    Busca inteligente de versículos com análise de emoções e IA.
+                </p>
+                <ul class="tech-features">
+                    <li>Busca Inteligente com Análise de Emoções</li>
+                    <li>Recomendações Personalizadas com IA</li>
+                    <li>Versículos Aleatórios "Surpreenda-me"</li>
+                    <li>Interface Moderna e Responsiva</li>
+                    <li>Múltiplas Versões da Bíblia (NVI, ACF, AA)</li>
+                    <li>Histórico de Interações</li>
+                </ul>
+                <button class="tech-button angular-button">
+                    🚀 Abrir Angular App
+                </button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>🔥 Projeto Educacional: Angular vs Blazor + IA + Bíblia</p>
+            <p>Desenvolvido com ❤️, ☕ e muita oração para a glória de Deus!</p>
+            <p>
+                📚 
+                <a href="https://github.com/anfsusax/PalavraConectada" class="github-link" target="_blank">
+                    GitHub Repository
+                </a>
+                | 
+                <a href="http://localhost:7000/swagger" class="github-link" target="_blank">
+                    🔧 API Swagger
+                </a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Adiciona efeitos visuais
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.tech-card');
+            
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-10px) scale(1.02)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+
+            // Adiciona animação de entrada
+            setTimeout(() => {
+                cards.forEach((card, index) => {
+                    setTimeout(() => {
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(50px)';
+                        card.style.transition = 'all 0.6s ease';
+                        
+                        setTimeout(() => {
+                            card.style.opacity = '1';
+                            card.style.transform = 'translateY(0)';
+                        }, 100);
+                    }, index * 200);
+                });
+            }, 500);
+        });
+    </script>
+</body>
+</html>
