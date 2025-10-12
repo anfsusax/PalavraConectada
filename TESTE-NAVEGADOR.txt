@@ -1,0 +1,117 @@
+═══════════════════════════════════════════════════════════════
+          🌐 TESTAR API NO NAVEGADOR - PASSO A PASSO
+═══════════════════════════════════════════════════════════════
+
+
+╔═══════════════════════════════════════════════════════════════╗
+║                    PASSO 1: HEALTH CHECK                      ║
+╚═══════════════════════════════════════════════════════════════╝
+
+1. Abra seu navegador (Chrome, Edge, Firefox)
+
+2. Cole esta URL na barra de endereço:
+
+   http://localhost:7000/health
+
+3. Aperte ENTER
+
+DEVE APARECER:
+{
+  "status": "healthy",
+  "timestamp": "...",
+  "version": "1.0.0",
+  "message": "Palavra Conectada API funcionando! 📖"
+}
+
+
+╔═══════════════════════════════════════════════════════════════╗
+║                    PASSO 2: SWAGGER UI                        ║
+╚═══════════════════════════════════════════════════════════════╝
+
+1. Cole esta URL no navegador:
+
+   http://localhost:7000
+
+2. Você verá uma página BONITA com todos os endpoints!
+
+
+╔═══════════════════════════════════════════════════════════════╗
+║              PASSO 3: TESTAR IA DE EMOÇÕES                    ║
+╚═══════════════════════════════════════════════════════════════╝
+
+Na página do Swagger (http://localhost:7000):
+
+1. Procure: POST /api/Emotion/analyze
+
+2. Clique no endpoint (vai expandir)
+
+3. Clique no botão: "Try it out"
+
+4. No campo "Request body", APAGUE o que está lá
+
+5. Cole EXATAMENTE isto:
+   {
+     "text": "estou triste"
+   }
+
+6. Clique no botão verde: "Execute"
+
+7. Role para baixo e veja a RESPOSTA!
+
+
+RESPOSTA ESPERADA:
+{
+  "detectedEmotion": "tristeza",
+  "confidence": 100,
+  "message": "Detectei que você está sentindo tristeza.",
+  "suggestions": [
+    "Versículos de consolo e esperança",
+    "História de Jó (superação do sofrimento)",
+    "Palavras de encorajamento",
+    "Oração de conforto"
+  ]
+}
+
+
+╔═══════════════════════════════════════════════════════════════╗
+║                    OUTROS TESTES                              ║
+╚═══════════════════════════════════════════════════════════════╝
+
+TESTE 2 - Versões da Bíblia:
+http://localhost:7000/api/verses/versions
+
+TESTE 3 - Versículo Aleatório:
+http://localhost:7000/api/verses/random?version=nvi
+
+TESTE 4 - Sugestões de Tristeza:
+http://localhost:7000/api/emotion/suggestions/tristeza
+
+
+═══════════════════════════════════════════════════════════════
+                  ⚠️ SE DER ERRO NO NAVEGADOR
+═══════════════════════════════════════════════════════════════
+
+ERRO: "Este site não pode ser acessado"
+SOLUÇÃO: O backend não está rodando!
+
+Execute em um novo terminal:
+cd "G:\projetos\aulas\PalavraConectada\backend\PalavraConectada.API"
+dotnet run
+
+Aguarde ver: "Now listening on: http://localhost:7000"
+
+
+ERRO: "Failed to fetch" no Swagger
+SOLUÇÃO: Ignore e veja a resposta abaixo (às vezes aparece mesmo assim)
+
+
+═══════════════════════════════════════════════════════════════
+                        🔥 COMECE AQUI:
+═══════════════════════════════════════════════════════════════
+
+                  http://localhost:7000/health
+
+            Copie e cole no navegador AGORA! 🚀
+
+═══════════════════════════════════════════════════════════════
+

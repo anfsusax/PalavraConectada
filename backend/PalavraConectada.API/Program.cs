@@ -65,12 +65,14 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<EmotionAnalyzerService>();
 builder.Services.AddScoped<BibleService>();
 
-// CORS - Permitir requisições do frontend
+// CORS - Permitir requisições do frontend E do próprio Swagger
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy.WithOrigins(
+                "http://localhost:7000",      // Próprio Swagger HTTP
+                "https://localhost:7001",     // Próprio Swagger HTTPS
                 "http://localhost:4200",      // Angular
                 "https://localhost:5001",     // Blazor
                 "http://localhost:5001"       // Blazor HTTP
@@ -131,7 +133,8 @@ if (app.Environment.IsDevelopment())
     app.Logger.LogInformation("📚 Swagger disponível em: https://localhost:7001");
 }
 
-app.UseHttpsRedirection();
+// HTTPS Redirection (desabilitado em desenvolvimento para facilitar testes)
+// app.UseHttpsRedirection();
 
 // CORS - DEVE vir antes de Authorization
 app.UseCors("AllowFrontend");

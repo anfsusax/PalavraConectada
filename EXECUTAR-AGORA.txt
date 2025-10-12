@@ -1,0 +1,84 @@
+
+═══════════════════════════════════════════════════════════════════════════════
+                    🚀 EXECUTAR PROJETO - PASSO A PASSO
+═══════════════════════════════════════════════════════════════════════════════
+
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                    📋 ABRA 3 TERMINAIS SEPARADOS                              ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                    TERMINAL 1: BACKEND API                                    ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+    cd "G:\projetos\aulas\PalavraConectada\backend\PalavraConectada.API"
+    dotnet run
+
+    Aguarde ver:
+    ✅ Banco de dados inicializado
+    ✅ Now listening on: http://localhost:7000
+    ✅ Now listening on: https://localhost:7001
+
+    Depois teste: http://localhost:7000/health
+
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                    TERMINAL 2: ANGULAR                                        ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+    cd "G:\projetos\aulas\PalavraConectada\frontend\angular"
+    npm start
+
+    Aguarde ver:
+    ✅ Compiled successfully
+    
+    Abrir: http://localhost:4200
+
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                    TERMINAL 3: BLAZOR                                         ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+    cd "G:\projetos\aulas\PalavraConectada\frontend\blazor"
+    dotnet run
+
+    Aguarde ver:
+    ✅ Now listening on: https://localhost:5001
+    
+    Abrir: https://localhost:5001
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+                        📊 PORTAS USADAS
+
+    Backend:  http://localhost:7000  (HTTP)
+              https://localhost:7001 (HTTPS)
+
+    Angular:  http://localhost:4200
+
+    Blazor:   https://localhost:5001
+
+═══════════════════════════════════════════════════════════════════════════════
+
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                    🧪 TESTE RÁPIDO (Depois de executar)                       ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+    1. Backend: http://localhost:7000/health
+       → Deve mostrar: "healthy"
+
+    2. Angular: http://localhost:4200
+       → Digite "amor" e busque
+
+    3. Blazor: https://localhost:5001
+       → Digite "amor" e busque
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                        🎯 COMECE PELO BACKEND!
+═══════════════════════════════════════════════════════════════════════════════
+
