@@ -1,0 +1,7 @@
+node_modules
+.angular
+.git
+*.md
+tsconfig.spec.json
+karma.conf.js
+
