@@ -1,0 +1,244 @@
+@page "/verse-search"
+@using PalavraConectada.Models
+@using PalavraConectada.Services
+@inject BibleApiService BibleApi
+
+<!-- Componente de busca - o coração da aplicação -->
+<div class="verse-search-container">
+    <div class="header">
+        <h1>📖 Palavra Conectada</h1>
+        <p class="subtitle">Encontre versículos bíblicos relacionados às suas palavras e sentimentos</p>
+    </div>
+
+    <!-- Área de busca -->
+    <div class="search-section">
+        <div class="search-box">
+            <input 
+                type="text" 
+                @bind="searchTerm" 
+                @bind:event="oninput"
+                @onkeyup="HandleKeyPress"
+                placeholder="Digite uma palavra ou frase (ex: amor, paz, esperança...)"
+                class="search-input"
+            />
+            
+            <select @bind="selectedVersion" class="version-select">
+                @foreach (var version in availableVersions)
+                {
+                    <option value="@version.Code">@version.Name</option>
+                }
+            </select>
+        </div>
+
+        <div class="button-group">
+            <button @onclick="SearchVerses" disabled="@isLoading" class="btn btn-primary">
+                @(isLoading ? "Buscando..." : "🔍 Buscar Versículos")
+            </button>
+            
+            <button @onclick="GetRandomVerse" disabled="@isLoading" class="btn btn-secondary">
+                🎲 Versículo Aleatório
+            </button>
+        </div>
+    </div>
+
+    <!-- Exemplos de busca -->
+    @if (searchResult == null && !isLoading)
+    {
+        <div class="examples-section">
+            <p class="examples-title">Sugestões de busca:</p>
+            <div class="examples-grid">
+                @foreach (var example in exampleSearches)
+                {
+                    <button 
+                        @onclick="() => UseExample(example.Term)"
+                        class="example-btn"
+                        disabled="@isLoading">
+                        @example.Term
+                    </button>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Mensagem de erro -->
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="error-message">
+            ⚠️ @errorMessage
+        </div>
+    }
+
+    <!-- Loading spinner -->
+    @if (isLoading)
+    {
+        <div class="loading">
+            <div class="spinner"></div>
+            <p>Buscando na Palavra de Deus...</p>
+        </div>
+    }
+
+    <!-- Resultados da busca -->
+    @if (searchResult != null && searchResult.Occurrence > 0)
+    {
+        <div class="results-section">
+            <div class="results-header">
+                <h2>📚 Resultados da Busca</h2>
+                <p class="results-count">
+                    Encontrados <strong>@searchResult.Occurrence</strong> 
+                    versículo(s) em <strong>@selectedVersion.ToUpper()</strong>
+                </p>
+            </div>
+
+            <div class="verses-container">
+                @for (int i = 0; i < searchResult.Verses.Count; i++)
+                {
+                    var verse = searchResult.Verses[i];
+                    var animationDelay = $"{i * 0.1}s";
+                    
+                    <div class="verse-card animate-in" style="animation-delay: @animationDelay">
+                        <div class="verse-reference">
+                            @GetVerseReference(verse)
+                        </div>
+                        
+                        <div class="verse-text">
+                            "@verse.Text"
+                        </div>
+                        
+                        <div class="verse-footer">
+                            <span class="verse-version">@searchResult.Version.ToUpper()</span>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @if (searchResult.Verses.Count < searchResult.Occurrence)
+            {
+                <div class="more-results">
+                    <p>Mostrando @searchResult.Verses.Count de @searchResult.Occurrence versículos</p>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private string searchTerm = string.Empty;
+    private string selectedVersion = "nvi";
+    private SearchResult? searchResult;
+    private bool isLoading = false;
+    private string errorMessage = string.Empty;
+
+    // Versões disponíveis da Bíblia
+    private List<BibleVersion> availableVersions = new()
+    {
+        new() { Code = "nvi", Name = "Nova Versão Internacional" },
+        new() { Code = "acf", Name = "Almeida Corrigida Fiel" },
+        new() { Code = "aa", Name = "Almeida Revista e Atualizada" }
+    };
+
+    // Exemplos de buscas para ajudar o usuário
+    private List<ExampleSearch> exampleSearches = new()
+    {
+        new() { Term = "amor", Description = "Versículos sobre amor" },
+        new() { Term = "fé", Description = "Versículos sobre fé" },
+        new() { Term = "esperança", Description = "Versículos sobre esperança" },
+        new() { Term = "paz", Description = "Versículos sobre paz" },
+        new() { Term = "sabedoria", Description = "Versículos sobre sabedoria" }
+    };
+
+    // Busca versículos baseado no termo inserido
+    private async Task SearchVerses()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            errorMessage = "Por favor, insira uma palavra ou frase para buscar.";
+            return;
+        }
+
+        isLoading = true;
+        errorMessage = string.Empty;
+        searchResult = null;
+
+        try
+        {
+            var result = await BibleApi.SearchVersesAsync(searchTerm, selectedVersion);
+            searchResult = result;
+
+            if (result?.Occurrence == 0)
+            {
+                errorMessage = "Nenhum versículo encontrado com este termo.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Erro ao buscar versículos. Tente novamente.";
+            Console.WriteLine($"Erro: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    // Busca versículo aleatório - deixar Deus surpreender
+    private async Task GetRandomVerse()
+    {
+        isLoading = true;
+        errorMessage = string.Empty;
+        searchResult = null;
+
+        try
+        {
+            var verse = await BibleApi.GetRandomVerseAsync(selectedVersion);
+            
+            if (verse != null)
+            {
+                searchResult = new SearchResult
+                {
+                    Occurrence = 1,
+                    Version = selectedVersion,
+                    Verses = new List<Verse> { verse }
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Erro ao buscar versículo. Tente novamente.";
+            Console.WriteLine($"Erro: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    // Usar um dos exemplos de busca
+    private async Task UseExample(string term)
+    {
+        searchTerm = term;
+        await SearchVerses();
+    }
+
+    // Lidar com a tecla Enter
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchVerses();
+        }
+    }
+
+    // Formatar referência do versículo
+    private string GetVerseReference(Verse verse)
+    {
+        return $"{verse.Book?.Name} {verse.Chapter}:{verse.Number}";
+    }
+
+    // Classe auxiliar para exemplos
+    private class ExampleSearch
+    {
+        public string Term { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+    }
+}
+

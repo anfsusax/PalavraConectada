@@ -1,0 +1,143 @@
+﻿@page "/"
+
+<PageTitle>Palavra Conectada</PageTitle>
+
+<div class="home-container">
+    <div class="welcome-section">
+        <h1>📖 Bem-vindo ao Palavra Conectada</h1>
+        <p class="lead">Encontre versículos bíblicos que falam ao seu coração</p>
+        
+        <div class="cta-section">
+            <a href="verse-search" class="btn btn-primary btn-lg">
+                🔍 Começar a Buscar
+            </a>
+        </div>
+        
+        <div class="info-cards">
+            <div class="card">
+                <div class="card-icon">📚</div>
+                <h3>Múltiplas Versões</h3>
+                <p>NVI, ACF, Almeida - escolha sua preferida</p>
+            </div>
+            
+            <div class="card">
+                <div class="card-icon">🔍</div>
+                <h3>Busca Inteligente</h3>
+                <p>Digite palavras e encontre versículos relacionados</p>
+            </div>
+            
+            <div class="card">
+                <div class="card-icon">🎲</div>
+                <h3>Versículo Aleatório</h3>
+                <p>Deixe Deus surpreender você hoje</p>
+            </div>
+        </div>
+        
+        <div class="verse-of-day">
+            <p class="verse-text">
+                "Lâmpada para os meus pés é a tua palavra e luz para o meu caminho."
+            </p>
+            <p class="verse-ref">Salmos 119:105</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .home-container {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+    }
+    
+    .welcome-section {
+        text-align: center;
+        max-width: 1000px;
+    }
+    
+    .welcome-section h1 {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .lead {
+        font-size: 1.5rem;
+        color: #666;
+        margin-bottom: 2rem;
+    }
+    
+    .cta-section {
+        margin: 3rem 0;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem 3rem;
+        border-radius: 50px;
+        font-size: 1.2rem;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s;
+        border: none;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+    }
+    
+    .info-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin: 3rem 0;
+    }
+    
+    .card {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+    
+    .card-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+    
+    .card h3 {
+        color: #667eea;
+        margin-bottom: 0.5rem;
+    }
+    
+    .verse-of-day {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 12px;
+        margin-top: 3rem;
+    }
+    
+    .verse-text {
+        font-size: 1.3rem;
+        font-style: italic;
+        margin-bottom: 0.5rem;
+    }
+    
+    .verse-ref {
+        font-weight: 600;
+        opacity: 0.9;
+    }
+</style>

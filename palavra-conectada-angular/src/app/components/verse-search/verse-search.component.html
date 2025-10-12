@@ -1,0 +1,98 @@
+<div class="verse-search-container">
+  <div class="header">
+    <h1>📖 Palavra Conectada</h1>
+    <p class="subtitle">Encontre versículos bíblicos relacionados às suas palavras e sentimentos</p>
+  </div>
+
+  <!-- Área de busca -->
+  <div class="search-section">
+    <div class="search-box">
+      <input 
+        type="text" 
+        [(ngModel)]="searchTerm" 
+        (keyup.enter)="searchVerses()"
+        placeholder="Digite uma palavra ou frase (ex: amor, paz, esperança...)"
+        class="search-input"
+      />
+      
+      <select [(ngModel)]="selectedVersion" class="version-select">
+        <option *ngFor="let version of availableVersions" [value]="version.code">
+          {{ version.name }}
+        </option>
+      </select>
+    </div>
+
+    <div class="button-group">
+      <button (click)="searchVerses()" [disabled]="isLoading" class="btn btn-primary">
+        {{ isLoading ? 'Buscando...' : '🔍 Buscar Versículos' }}
+      </button>
+      
+      <button (click)="getRandomVerse()" [disabled]="isLoading" class="btn btn-secondary">
+        🎲 Versículo Aleatório
+      </button>
+    </div>
+  </div>
+
+  <!-- Exemplos de busca -->
+  <div class="examples-section" *ngIf="!searchResult">
+    <p class="examples-title">Sugestões de busca:</p>
+    <div class="examples-grid">
+      <button 
+        *ngFor="let example of exampleSearches" 
+        (click)="useExample(example.term)"
+        class="example-btn"
+        [disabled]="isLoading"
+      >
+        {{ example.term }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Mensagem de erro -->
+  <div *ngIf="errorMessage" class="error-message">
+    ⚠️ {{ errorMessage }}
+  </div>
+
+  <!-- Loading spinner -->
+  <div *ngIf="isLoading" class="loading">
+    <div class="spinner"></div>
+    <p>Buscando na Palavra de Deus...</p>
+  </div>
+
+  <!-- Resultados da busca -->
+  <div *ngIf="searchResult && searchResult.occurrence > 0" class="results-section">
+    <div class="results-header">
+      <h2>📚 Resultados da Busca</h2>
+      <p class="results-count">
+        Encontrados <strong>{{ searchResult.occurrence }}</strong> 
+        versículo(s) em <strong>{{ selectedVersion.toUpperCase() }}</strong>
+      </p>
+    </div>
+
+    <div class="verses-container">
+      <div *ngFor="let verse of searchResult.verses; let i = index" 
+           class="verse-card"
+           [class.animate-in]="true"
+           [style.animation-delay]="(i * 0.1) + 's'">
+        
+        <div class="verse-reference">
+          {{ getVerseReference(verse) }}
+        </div>
+        
+        <div class="verse-text">
+          "{{ verse.text }}"
+        </div>
+        
+        <div class="verse-footer">
+          <span class="verse-version">{{ searchResult.version.toUpperCase() }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Limitar exibição se houver muitos resultados -->
+    <div *ngIf="searchResult.verses.length < searchResult.occurrence" class="more-results">
+      <p>Mostrando {{ searchResult.verses.length }} de {{ searchResult.occurrence }} versículos</p>
+    </div>
+  </div>
+</div>
+
