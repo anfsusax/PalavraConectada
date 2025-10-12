@@ -6,6 +6,10 @@ using PalavraConectada.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configurar porta para Railway (ou usar padrão)
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
 // ═══════════════════════════════════════════════════════════════════════════
 // CONFIGURAÇÃO DE SERVIÇOS
 // ═══════════════════════════════════════════════════════════════════════════
@@ -66,23 +70,34 @@ builder.Services.AddScoped<EmotionAnalyzerService>();
 builder.Services.AddScoped<BibleService>();
 builder.Services.AddScoped<BibleMigrationService>(); // 🔥 Migração inteligente
 
-// CORS - Permitir requisições do frontend E do próprio Swagger
+// CORS - Configuração para desenvolvimento e produção
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:7000",      // Próprio Swagger HTTP
-                "https://localhost:7001",     // Próprio Swagger HTTPS
-                "http://localhost:4200",      // Angular
-                "https://localhost:5001",     // Blazor HTTPS
-                "http://localhost:5001",      // Blazor HTTP
-                "http://localhost:5292",      // Blazor HTTP (porta alternativa)
-                "https://localhost:7292"      // Blazor HTTPS (porta alternativa)
-            )
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials();
+        if (builder.Environment.IsDevelopment())
+        {
+            // Desenvolvimento: origens específicas
+            policy.WithOrigins(
+                    "http://localhost:7000",
+                    "https://localhost:7001",
+                    "http://localhost:4200",
+                    "https://localhost:5001",
+                    "http://localhost:5001",
+                    "http://localhost:5292",
+                    "https://localhost:7292"
+                )
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials();
+        }
+        else
+        {
+            // Produção: permitir qualquer origem (pode ser refinado depois)
+            policy.AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader();
+        }
     });
 });
 
@@ -122,18 +137,22 @@ using (var scope = app.Services.CreateScope())
 // MIDDLEWARE PIPELINE
 // ═══════════════════════════════════════════════════════════════════════════
 
-// Swagger (apenas em desenvolvimento)
+// Swagger - Habilitado em todos os ambientes para facilitar testes
+app.UseSwagger();
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Palavra Conectada API v1");
+    options.RoutePrefix = string.Empty; // Swagger na raiz
+    options.DocumentTitle = "Palavra Conectada API - Documentação";
+});
+
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Palavra Conectada API v1");
-        options.RoutePrefix = string.Empty; // Swagger na raiz
-        options.DocumentTitle = "Palavra Conectada API - Documentação";
-    });
-    
     app.Logger.LogInformation("📚 Swagger disponível em: https://localhost:7001");
+}
+else
+{
+    app.Logger.LogInformation("📚 Swagger disponível na raiz da aplicação");
 }
 
 // HTTPS Redirection (desabilitado em desenvolvimento para facilitar testes)
