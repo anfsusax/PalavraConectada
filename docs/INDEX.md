@@ -5,8 +5,9 @@
 ## 🚀 **INÍCIO RÁPIDO:**
 
 1. **[INICIO-RAPIDO.md](INICIO-RAPIDO.md)** - Como começar com o projeto
-2. **[EXECUTAR-PROJETO-COMPLETO.md](EXECUTAR-PROJETO-COMPLETO.md)** - Executar backend + frontend
-3. **[EXECUTAR-AGORA.txt](EXECUTAR-AGORA.txt)** - Comandos rápidos
+2. **[HOME-PAGE-GUIDE.md](HOME-PAGE-GUIDE.md)** - 🏠 Página home com escolha Blazor/Angular
+3. **[EXECUTAR-PROJETO-COMPLETO.md](EXECUTAR-PROJETO-COMPLETO.md)** - Executar backend + frontend
+4. **[EXECUTAR-AGORA.txt](EXECUTAR-AGORA.txt)** - Comandos rápidos
 
 ---
 
