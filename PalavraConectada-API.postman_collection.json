@@ -1,0 +1,328 @@
+{
+  "info": {
+    "name": "Palavra Conectada API",
+    "description": "API de versículos bíblicos com análise de emoções - Desenvolvido por Alex Feitoza",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Verifica se a API está funcionando"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Migrar Bíblia - NVI",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"nvi\",\n  \"forceReimport\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/Admin/migrate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "Admin", "migrate"]
+            },
+            "description": "Importa todos os versículos da Bíblia NVI (31.102 versículos)"
+          },
+          "response": []
+        },
+        {
+          "name": "Migrar Bíblia - ACF",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"acf\",\n  \"forceReimport\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/Admin/migrate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "Admin", "migrate"]
+            },
+            "description": "Importa todos os versículos da Bíblia Almeida Corrigida Fiel"
+          },
+          "response": []
+        },
+        {
+          "name": "Forçar Reimportação",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"nvi\",\n  \"forceReimport\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/Admin/migrate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "Admin", "migrate"]
+            },
+            "description": "Apaga tudo e reimporta (use com cuidado!)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Versículos",
+      "item": [
+        {
+          "name": "Versículo Aleatório",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Verses/random?version=nvi",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "Verses", "random"],
+              "query": [
+                {
+                  "key": "version",
+                  "value": "nvi"
+                }
+              ]
+            },
+            "description": "Retorna um versículo aleatório da Bíblia"
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar por Palavra-chave",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Verses/search?keyword=amor&version=nvi",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "Verses", "search"],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "amor"
+                },
+                {
+                  "key": "version",
+                  "value": "nvi"
+                }
+              ]
+            },
+            "description": "Busca versículos que contém a palavra especificada"
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar por Emoção",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Verses/by-emotion/alegria?version=nvi&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "Verses", "by-emotion", "alegria"],
+              "query": [
+                {
+                  "key": "version",
+                  "value": "nvi"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Busca versículos relacionados a uma emoção específica"
+          },
+          "response": []
+        },
+        {
+          "name": "Recomendação Inteligente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Estou muito feliz hoje!\",\n  \"version\": \"nvi\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/Verses/recommend",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "Verses", "recommend"]
+            },
+            "description": "Analisa o texto, detecta a emoção e recomenda versículos"
+          },
+          "response": []
+        },
+        {
+          "name": "Histórico de Interações",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Verses/history?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "Verses", "history"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Retorna histórico das últimas interações"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Emoções",
+      "item": [
+        {
+          "name": "Analisar Emoção - Alegria",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Estou muito feliz e alegre hoje! Que dia maravilhoso!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/Emotion/analyze",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "Emotion", "analyze"]
+            },
+            "description": "Detecta emoção de alegria no texto"
+          },
+          "response": []
+        },
+        {
+          "name": "Analisar Emoção - Tristeza",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Estou triste e desanimado hoje\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/Emotion/analyze",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "Emotion", "analyze"]
+            },
+            "description": "Detecta emoção de tristeza no texto"
+          },
+          "response": []
+        },
+        {
+          "name": "Analisar Emoção - Ansiedade",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Estou preocupado e ansioso com o futuro\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/Emotion/analyze",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "Emotion", "analyze"]
+            },
+            "description": "Detecta emoção de ansiedade no texto"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Todas Emoções",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Emotion/list",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "Emotion", "list"]
+            },
+            "description": "Lista todas as emoções disponíveis no sistema"
+          },
+          "response": []
+        },
+        {
+          "name": "Obter Sugestões por Emoção",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Emotion/alegria/suggestions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "Emotion", "alegria", "suggestions"]
+            },
+            "description": "Retorna palavras-chave relacionadas à emoção"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://sua-url-do-railway.up.railway.app",
+      "type": "string"
+    }
+  ]
+}
+
