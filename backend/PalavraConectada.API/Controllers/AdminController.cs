@@ -59,50 +59,80 @@ public class AdminController : ControllerBase
 
 
     /// <summary>
+    /// 🚀 Migra toda a Bíblia automaticamente
+    /// Importa todos os 31.102 versículos de uma vez!
+    /// </summary>
+    [HttpPost("migrate")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<object>> MigrateBible([FromBody] MigrateRequest request)
+    {
+        _logger.LogInformation("🚀 Iniciando migração completa da Bíblia - Versão: {Version}", request.Version);
+
+        try
+        {
+            var result = await _migrationService.MigrateBibleAsync(request.Version, request.ForceReimport);
+
+            return Ok(new
+            {
+                success = result.Success,
+                message = result.Success 
+                    ? $"✅ Migração concluída! {result.TotalVersesAdded} versículos importados." 
+                    : $"❌ Erro na migração: {result.ErrorMessage}",
+                versesImported = result.TotalVersesAdded,
+                booksImported = result.BooksProcessed,
+                version = request.Version,
+                duration = result.Duration
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Erro fatal na migração");
+            return StatusCode(500, new
+            {
+                success = false,
+                error = ex.Message
+            });
+        }
+    }
+
+    /// <summary>
     /// 📗 Migra um livro específico da Bíblia
     /// Use este endpoint para migração controlada (livro por livro)
     /// </summary>
     [HttpPost("migrate-book")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<object>> MigrateBook(
-        [FromQuery] string bookAbbrev,
-        [FromQuery] string bookName,
-        [FromQuery] int chapters,
-        [FromQuery] string author = "Desconhecido",
-        [FromQuery] string group = "Geral",
-        [FromQuery] string testament = "VT",
-        [FromQuery] string version = "nvi")
+    public async Task<ActionResult<object>> MigrateBook([FromBody] MigrateBookRequest request)
     {
-        _logger.LogInformation("📗 Migrando livro: {BookName}", bookName);
+        _logger.LogInformation("📗 Migrando livro: {BookName}", request.BookName);
 
         try
         {
             var bookInfo = new BookInfo
             {
-                Abbrev = bookAbbrev,
-                Name = bookName,
-                Author = author,
-                Group = group,
-                Testament = testament,
-                Chapters = chapters
+                Abbrev = request.BookAbbrev,
+                Name = request.BookName,
+                Author = request.Author,
+                Group = request.Group,
+                Testament = request.Testament,
+                Chapters = request.Chapters
             };
 
-            var result = await _migrationService.MigrateBookAsync(bookInfo, version);
+            var result = await _migrationService.MigrateBookAsync(bookInfo, request.Version);
 
             return Ok(new
             {
                 success = result.Success,
-                book = bookName,
+                book = request.BookName,
                 versesAdded = result.VersesAdded,
                 versesSkipped = result.VersesSkipped,
                 message = result.Success 
-                    ? $"✅ {bookName} migrado com sucesso! {result.VersesAdded} versículos adicionados." 
+                    ? $"✅ {request.BookName} migrado com sucesso! {result.VersesAdded} versículos adicionados." 
                     : $"❌ Erro: {result.ErrorMessage}"
             });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Erro ao migrar livro {BookName}", bookName);
+            _logger.LogError(ex, "❌ Erro ao migrar livro {BookName}", request.BookName);
             return StatusCode(500, new
             {
                 success = false,
@@ -377,5 +407,28 @@ public class BibleLibraryController : ControllerBase
             verses
         });
     }
+}
+
+/// <summary>
+/// Request para migração da Bíblia completa
+/// </summary>
+public record MigrateRequest
+{
+    public string Version { get; init; } = "nvi";
+    public bool ForceReimport { get; init; } = false;
+}
+
+/// <summary>
+/// Request para migração de um livro específico
+/// </summary>
+public record MigrateBookRequest
+{
+    public string BookAbbrev { get; init; } = "";
+    public string BookName { get; init; } = "";
+    public int Chapters { get; init; }
+    public string Author { get; init; } = "Desconhecido";
+    public string Group { get; init; } = "Geral";
+    public string Testament { get; init; } = "VT";
+    public string Version { get; init; } = "nvi";
 }
 
