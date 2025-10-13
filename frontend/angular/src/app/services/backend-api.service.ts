@@ -25,12 +25,18 @@ export class BackendApiService {
    * Detecta automaticamente a URL da API baseado no ambiente
    */
   private getApiUrl(): string {
+    const hostname = window.location.hostname;
+    
+    console.log('🔍 Hostname detectado:', hostname);
+    
     // Se estiver em localhost, usa API local
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      console.log('🏠 Ambiente LOCAL detectado - usando API local');
       return 'http://localhost:7000/api';
     }
     
     // Produção: usa API no Railway
+    console.log('🌐 Ambiente PRODUÇÃO detectado - usando API Railway');
     return 'https://palavraconectada-production.up.railway.app/api';
   }
 
