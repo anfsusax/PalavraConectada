@@ -7,12 +7,19 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-// Registrar HttpClient - AGORA apontando para NOSSO backend!
+// Registrar HttpClient - Detecta automaticamente o ambiente
 builder.Services.AddScoped(sp => 
 {
+    var hostUri = builder.HostEnvironment.BaseAddress;
+    
+    // Se estiver rodando localmente, usa API local
+    var baseAddress = hostUri.Contains("localhost") || hostUri.Contains("127.0.0.1")
+        ? new Uri("http://localhost:7000/")
+        : new Uri(hostUri); // Em produção, usa o host atual
+    
     var client = new HttpClient 
     { 
-        BaseAddress = new Uri("http://localhost:7000/") // Usando HTTP para evitar problemas de certificado
+        BaseAddress = baseAddress
     };
     return client;
 });

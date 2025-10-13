@@ -27,14 +27,19 @@ public class BackendApiService
     /// </summary>
     private string GetApiUrl()
     {
-        // Se estiver em localhost, usa API local
+        // Se estiver em localhost (desenvolvimento), usa API local
         var baseUri = _httpClient.BaseAddress?.ToString() ?? "";
+        
+        _logger.LogInformation($"🔍 BaseAddress detectado: {baseUri}");
+        
         if (baseUri.Contains("localhost") || baseUri.Contains("127.0.0.1"))
         {
+            _logger.LogInformation("🏠 Ambiente LOCAL detectado - usando API local");
             return "http://localhost:7000/api";
         }
         
-        // Produção: usa API no Railway
+        // Produção: SEMPRE usa API no Railway
+        _logger.LogInformation("🌐 Ambiente PRODUÇÃO detectado - usando API Railway");
         return "https://palavraconectada-production.up.railway.app/api";
     }
 
