@@ -45,7 +45,21 @@ npm start
 
 ---
 
-## 📚 **TODA A DOCUMENTAÇÃO:**
+## 🌐 **APLICAÇÃO EM PRODUÇÃO:**
+
+🚀 **Backend API:** https://palavraconectada-production.up.railway.app  
+🅰️ **Frontend Angular:** (aguardando Vercel)  
+🔥 **Frontend Blazor:** https://calm-wave-0b86b2210.1.azurestaticapps.net  
+
+## 📚 **GUIAS MESTRES - APRENDA TUDO:**
+
+🏆 **[GUIA MESTRE COMPLETO](GUIA-MESTRE-COMPLETO.md)** - Do zero ao expert (roadmap 12 meses)  
+🅰️ **[GUIA ANGULAR](docs/GUIA-ANGULAR-COMPLETO.md)** - Components, Services, RxJS, Forms  
+🔥 **[GUIA BLAZOR](docs/GUIA-BLAZOR-COMPLETO.md)** - C# no frontend, Razor, WebAssembly  
+🏛️ **[GUIA ARQUITETURA](docs/GUIA-ARQUITETURA-DEPLOY.md)** - Clean Arch, Patterns, Deploy  
+📋 **[ÍNDICE DOS GUIAS](docs/INDICE-GUIAS-MESTRES.md)** - Plano de estudos estruturado  
+
+## 📖 **DOCUMENTAÇÃO TÉCNICA:**
 
 👉 **[`docs/INDEX.md`](docs/INDEX.md)** - Índice completo de toda documentação  
 👉 **[`docs/INICIO-RAPIDO.md`](docs/INICIO-RAPIDO.md)** - Começar agora  
