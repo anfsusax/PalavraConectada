@@ -70,9 +70,10 @@ builder.Services.AddDbContext<BibleDbContext>(options =>
 
 // Serviços personalizados
 builder.Services.AddSingleton<LocalBibleJsonService>(); // Serviço para ler JSONs da pasta biblia-master
-builder.Services.AddScoped<EmotionAnalyzerService>();
+builder.Services.AddScoped<EmotionAnalyzerService>(); // 🧠 Análise de emoções melhorada
 builder.Services.AddScoped<BibleService>();
 builder.Services.AddScoped<BibleMigrationService>(); // 🔥 Migração inteligente
+builder.Services.AddScoped<IntelligentRecommendationService>(); // 💡 Recomendação inteligente
 
 // CORS - Configuração para desenvolvimento e produção
 builder.Services.AddCors(options =>

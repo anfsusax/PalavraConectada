@@ -19,6 +19,19 @@ public class EmotionResponse
     public string RecommendationType { get; set; } = string.Empty;
     public List<string> Suggestions { get; set; } = new();
     public int InteractionId { get; set; }
+    
+    // NOVO: Emoções secundárias detectadas
+    public List<SecondaryEmotionDto> SecondaryEmotions { get; set; } = new();
+    
+    // NOVO: Palavras-chave detectadas
+    public List<string> DetectedKeywords { get; set; } = new();
+}
+
+public class SecondaryEmotionDto
+{
+    public string Name { get; set; } = string.Empty;
+    public int Confidence { get; set; }
+    public int Score { get; set; }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -40,6 +53,28 @@ public class RecommendationResponse
     public Verse? RecommendedVerse { get; set; }
     public List<Verse> AlternativeVerses { get; set; } = new();
     public List<string> Suggestions { get; set; } = new();
+    
+    // NOVO: Recomendação inteligente
+    public VerseAnalysisDto? VerseAnalysis { get; set; } // Análise do versículo recomendado
+    public List<Verse> SecondaryThemeVerses { get; set; } = new(); // Versículos por temas secundários
+    public List<BibleStoryReferenceDto> RelatedStories { get; set; } = new(); // Histórias bíblicas relacionadas
+    public List<SecondaryEmotionDto> SecondaryEmotions { get; set; } = new(); // Emoções secundárias
+}
+
+public class VerseAnalysisDto
+{
+    public Verse Verse { get; set; } = null!;
+    public List<Verse> ContextVerses { get; set; } = new();
+    public List<string> Themes { get; set; } = new();
+    public string Summary { get; set; } = string.Empty;
+    public string MainMessage { get; set; } = string.Empty;
+}
+
+public class BibleStoryReferenceDto
+{
+    public string Title { get; set; } = string.Empty;
+    public string Reference { get; set; } = string.Empty;
+    public string Theme { get; set; } = string.Empty;
 }
 
 public class SearchVerseResponse
