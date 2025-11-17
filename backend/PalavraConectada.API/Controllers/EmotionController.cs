@@ -1,6 +1,7 @@
 // Controller de Emoções - Analisa sentimentos do usuário
 // Como um pastor que ouve as ovelhas, este controller ouve os sentimentos
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using PalavraConectada.API.Services;
 using PalavraConectada.API.Data;
 using Microsoft.EntityFrameworkCore;
@@ -39,8 +40,10 @@ public class EmotionController : ControllerBase
     /// Body: { "text": "Estou muito triste hoje" }
     /// </example>
     [HttpPost("analyze")]
+    [EnableRateLimiting("EmotionAnalysis")] // 🔒 Rate limiting: 10 req/min
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult<EmotionResponse>> AnalyzeEmotion([FromBody] EmotionRequest request)
     {
         _logger.LogInformation("📥 Requisição de análise de emoção recebida");

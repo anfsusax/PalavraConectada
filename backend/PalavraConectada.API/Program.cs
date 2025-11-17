@@ -1,5 +1,6 @@
 // Program.cs - Configuração principal da API
 // Como Moisés organizou o tabernáculo, organizamos nossa API
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using PalavraConectada.API.Data;
 using PalavraConectada.API.Services;
@@ -104,6 +105,59 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Rate Limiting - Proteção contra abuso de API
+builder.Services.AddRateLimiter(options =>
+{
+    // Política para análise de emoções (CPU intensivo) - 10 req/min por IP
+    options.AddFixedWindowLimiter("EmotionAnalysis", opt =>
+    {
+        opt.PermitLimit = 10;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit = 2;
+    });
+
+    // Política para busca de versículos (moderado) - 30 req/min por IP
+    options.AddFixedWindowLimiter("VerseSearch", opt =>
+    {
+        opt.PermitLimit = 30;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit = 5;
+    });
+
+    // Política para migração (muito pesado) - 1 req/hora por IP
+    options.AddFixedWindowLimiter("Migration", opt =>
+    {
+        opt.PermitLimit = 1;
+        opt.Window = TimeSpan.FromHours(1);
+        opt.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit = 0; // Sem fila para migração
+    });
+
+    // Política global padrão - 60 req/min por IP
+    options.GlobalLimiter = System.Threading.RateLimiting.PartitionedRateLimiter.Create<Microsoft.AspNetCore.Http.HttpContext, string>(context =>
+        System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: partition => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 60,
+                Window = TimeSpan.FromMinutes(1)
+            }));
+
+    // Mensagem de erro personalizada
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.StatusCode = 429; // Too Many Requests
+        await context.HttpContext.Response.WriteAsJsonAsync(new
+        {
+            error = "Muitas requisições. Por favor, aguarde um momento.",
+            retryAfter = 60
+        }, cancellationToken: token);
+    };
+});
+
 // Logging
 builder.Logging.AddConsole();
 builder.Logging.SetMinimumLevel(LogLevel.Information);
@@ -163,6 +217,9 @@ else
 
 // CORS - DEVE vir antes de Authorization
 app.UseCors("AllowFrontend");
+
+// Rate Limiting - DEVE vir antes de Authorization
+app.UseRateLimiter();
 
 app.UseAuthorization();
 

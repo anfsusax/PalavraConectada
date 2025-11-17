@@ -1,6 +1,7 @@
 // Controller Administrativo - Gerenciamento do sistema
 // Como os sacerdotes cuidavam do templo
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using PalavraConectada.API.Services;
 using PalavraConectada.API.Data;
 using Microsoft.EntityFrameworkCore;
@@ -63,7 +64,9 @@ public class AdminController : ControllerBase
     /// Importa todos os 31.102 versículos de uma vez!
     /// </summary>
     [HttpPost("migrate")]
+    [EnableRateLimiting("Migration")] // 🔒 Rate limiting: 1 req/hora (muito pesado)
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult<object>> MigrateBible([FromBody] MigrateRequest request)
     {
         _logger.LogInformation("🚀 Iniciando migração completa da Bíblia - Versão: {Version}", request.Version);

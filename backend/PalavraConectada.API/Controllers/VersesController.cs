@@ -1,6 +1,7 @@
 // Controller de Versículos - Busca e recomendação de versículos
 // Como um escriba que conhece toda a Escritura
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using PalavraConectada.API.Services;
 using PalavraConectada.API.Data;
 using Microsoft.EntityFrameworkCore;
@@ -36,7 +37,10 @@ public class VersesController : ControllerBase
     /// <param name="version">Versão da Bíblia (nvi, acf, aa)</param>
     /// <returns>Lista de versículos encontrados</returns>
     [HttpGet("search")]
+    [EnableRateLimiting("VerseSearch")] // 🔒 Rate limiting: 30 req/min
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult<SearchVerseResponse>> SearchVerses(
         [FromQuery] string keyword,
         [FromQuery] string version = "nvi")
@@ -147,7 +151,9 @@ public class VersesController : ControllerBase
     /// <param name="request">Texto do usuário</param>
     /// <returns>Versículo recomendado para o sentimento</returns>
     [HttpPost("recommend")]
+    [EnableRateLimiting("EmotionAnalysis")] // 🔒 Rate limiting: 10 req/min (usa análise de emoção)
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult<RecommendationResponse>> GetRecommendation(
         [FromBody] RecommendationRequest request)
     {

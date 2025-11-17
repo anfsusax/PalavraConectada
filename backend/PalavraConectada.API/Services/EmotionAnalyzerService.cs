@@ -1,19 +1,33 @@
 // Serviço de Análise de Emoções - A Inteligência do Sistema
-// Como José interpretava sonhos, este serviço interpreta sentimentos
+// Versão melhorada: detecta múltiplas emoções, scores orgânicos, contexto humano
 using PalavraConectada.API.Data;
 using PalavraConectada.API.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 
 namespace PalavraConectada.API.Services;
 
 /// <summary>
 /// Serviço que analisa o texto do usuário e detecta emoções
-/// Baseado em palavras-chave e contexto
+/// Versão melhorada: detecta múltiplas emoções, scores orgânicos, contexto melhorado
 /// </summary>
 public class EmotionAnalyzerService
 {
     private readonly BibleDbContext _context;
     private readonly ILogger<EmotionAnalyzerService> _logger;
+
+    // Palavras de intensidade (aumentam o score)
+    private readonly HashSet<string> _intensityWords = new()
+    {
+        "muito", "extremamente", "totalmente", "completamente", "realmente",
+        "demais", "bastante", "tanto", "tão", "super", "ultra"
+    };
+
+    // Palavras de negação (diminuem o score)
+    private readonly HashSet<string> _negationWords = new()
+    {
+        "não", "nem", "nunca", "jamais", "nenhum", "nada"
+    };
 
     public EmotionAnalyzerService(
         BibleDbContext context,
@@ -24,13 +38,11 @@ public class EmotionAnalyzerService
     }
 
     /// <summary>
-    /// Analisa um texto e detecta a emoção predominante
+    /// Analisa um texto e detecta emoções (melhorado: múltiplas emoções, scores orgânicos)
     /// </summary>
-    /// <param name="userInput">Texto do usuário (ex: "Estou triste hoje")</param>
-    /// <returns>Emoção detectada com nível de confiança</returns>
     public async Task<EmotionAnalysisResult> AnalyzeEmotionAsync(string userInput)
     {
-        _logger.LogInformation("🧠 Analisando emoção: {Input}", userInput);
+        _logger.LogInformation("🧠 Analisando emoção (melhorado): {Input}", userInput);
 
         if (string.IsNullOrWhiteSpace(userInput))
         {
@@ -43,40 +55,18 @@ public class EmotionAnalyzerService
         }
 
         // Normalizar texto
-        var normalizedText = userInput.ToLower().Trim();
+        var normalizedText = NormalizeText(userInput);
         
         // Buscar todas as emoções do banco
         var emotions = await _context.Emotions.ToListAsync();
         
-        // Lista de emoções encontradas com pontuação
-        var emotionScores = new Dictionary<Emotion, int>();
+        // Lista de emoções encontradas com pontuação detalhada
+        var emotionScores = new Dictionary<Emotion, EmotionScore>();
 
         foreach (var emotion in emotions)
         {
-            var keywords = emotion.Keywords.Split(',', StringSplitOptions.RemoveEmptyEntries);
-            var score = 0;
-
-            foreach (var keyword in keywords)
-            {
-                var normalizedKeyword = keyword.Trim().ToLower();
-                
-                // Palavra exata = mais pontos
-                if (normalizedText.Contains($" {normalizedKeyword} ") || 
-                    normalizedText.StartsWith(normalizedKeyword) ||
-                    normalizedText.EndsWith(normalizedKeyword))
-                {
-                    score += 10;
-                    _logger.LogDebug("✅ Palavra-chave encontrada: {Keyword} (emoção: {Emotion})", 
-                        keyword, emotion.Name);
-                }
-                // Parte da palavra = menos pontos
-                else if (normalizedText.Contains(normalizedKeyword))
-                {
-                    score += 3;
-                }
-            }
-
-            if (score > 0)
+            var score = CalculateEmotionScore(normalizedText, emotion);
+            if (score.TotalScore > 0)
             {
                 emotionScores[emotion] = score;
             }
@@ -94,10 +84,28 @@ public class EmotionAnalyzerService
             };
         }
 
-        // Pegar a emoção com maior pontuação
-        var topEmotion = emotionScores.OrderByDescending(x => x.Value).First();
-        var maxScore = emotionScores.Values.Max();
-        var confidence = Math.Min((maxScore / 10.0) * 100, 100); // Máximo 100%
+        // Ordenar por score total
+        var sortedEmotions = emotionScores.OrderByDescending(x => x.Value.TotalScore).ToList();
+        var topEmotion = sortedEmotions.First();
+        
+        // Calcular confiança de forma mais orgânica (não sempre 100%)
+        var confidence = CalculateOrganicConfidence(topEmotion.Value, sortedEmotions);
+
+        // Detectar emoções secundárias (mistura de emoções)
+        var secondaryEmotions = sortedEmotions
+            .Skip(1)
+            .Where(e => e.Value.TotalScore >= topEmotion.Value.TotalScore * 0.5) // Pelo menos 50% do score principal
+            .Take(2)
+            .Select(e => new SecondaryEmotion
+            {
+                Name = e.Key.Name,
+                Confidence = CalculateOrganicConfidence(e.Value, sortedEmotions),
+                Score = e.Value.TotalScore
+            })
+            .ToList();
+
+        // Gerar mensagem mais humana
+        var message = GenerateHumanMessage(topEmotion.Key, confidence, secondaryEmotions, normalizedText);
 
         _logger.LogInformation("✅ Emoção detectada: {Emotion} (confiança: {Confidence}%)", 
             topEmotion.Key.Name, confidence);
@@ -105,12 +113,172 @@ public class EmotionAnalyzerService
         return new EmotionAnalysisResult
         {
             DetectedEmotion = topEmotion.Key.Name,
-            Confidence = (int)confidence,
+            Confidence = confidence,
             EmotionId = topEmotion.Key.Id,
             Description = topEmotion.Key.Description,
             RecommendationType = topEmotion.Key.RecommendationType,
-            Message = $"Detectei que você está sentindo {topEmotion.Key.Name}."
+            Message = message,
+            SecondaryEmotions = secondaryEmotions,
+            DetectedKeywords = topEmotion.Value.MatchedKeywords
         };
+    }
+
+    /// <summary>
+    /// Calcula score detalhado para uma emoção
+    /// </summary>
+    private EmotionScore CalculateEmotionScore(string normalizedText, Emotion emotion)
+    {
+        var score = new EmotionScore();
+        var keywords = emotion.Keywords.Split(',', StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (var keyword in keywords)
+        {
+            var normalizedKeyword = keyword.Trim().ToLower();
+            var keywordScore = 0;
+            var matched = false;
+
+            // Verificar intensidade próxima à palavra-chave
+            var hasIntensity = CheckIntensityNearKeyword(normalizedText, normalizedKeyword);
+            var hasNegation = CheckNegationNearKeyword(normalizedText, normalizedKeyword);
+
+            // Palavra exata com contexto = mais pontos
+            if (Regex.IsMatch(normalizedText, $@"\b{Regex.Escape(normalizedKeyword)}\b"))
+            {
+                keywordScore = 10;
+                matched = true;
+                
+                // Aumentar se tiver palavra de intensidade próxima
+                if (hasIntensity)
+                {
+                    keywordScore += 5;
+                }
+                
+                // Diminuir se tiver negação
+                if (hasNegation)
+                {
+                    keywordScore = Math.Max(0, keywordScore - 8);
+                }
+            }
+            // Parte da palavra = menos pontos
+            else if (normalizedText.Contains(normalizedKeyword))
+            {
+                keywordScore = 3;
+                matched = true;
+            }
+
+            if (matched)
+            {
+                score.TotalScore += keywordScore;
+                score.MatchedKeywords.Add(keyword.Trim());
+            }
+        }
+
+        // Bônus por múltiplas palavras-chave encontradas (indica emoção forte)
+        if (score.MatchedKeywords.Count > 1)
+        {
+            score.TotalScore += score.MatchedKeywords.Count * 2;
+        }
+
+        return score;
+    }
+
+    /// <summary>
+    /// Verifica se há palavra de intensidade próxima à palavra-chave
+    /// </summary>
+    private bool CheckIntensityNearKeyword(string text, string keyword)
+    {
+        var pattern = $@"\b({string.Join("|", _intensityWords)})\s+\w*\s*{Regex.Escape(keyword)}|{Regex.Escape(keyword)}\s+\w*\s*({string.Join("|", _intensityWords)})";
+        return Regex.IsMatch(text, pattern, RegexOptions.IgnoreCase);
+    }
+
+    /// <summary>
+    /// Verifica se há negação próxima à palavra-chave
+    /// </summary>
+    private bool CheckNegationNearKeyword(string text, string keyword)
+    {
+        var pattern = $@"\b({string.Join("|", _negationWords)})\s+\w*\s*{Regex.Escape(keyword)}";
+        return Regex.IsMatch(text, pattern, RegexOptions.IgnoreCase);
+    }
+
+    /// <summary>
+    /// Calcula confiança de forma orgânica (não sempre 100%)
+    /// </summary>
+    private int CalculateOrganicConfidence(EmotionScore topScore, List<KeyValuePair<Emotion, EmotionScore>> allScores)
+    {
+        var maxPossibleScore = 50; // Score máximo teórico
+        var baseConfidence = (int)((topScore.TotalScore / (double)maxPossibleScore) * 100);
+        
+        // Ajustar baseado na diferença com a segunda emoção
+        if (allScores.Count > 1)
+        {
+            var secondScore = allScores[1].Value.TotalScore;
+            var difference = topScore.TotalScore - secondScore;
+            
+            // Se a diferença é pequena, reduzir confiança (emoções misturadas)
+            if (difference < 5)
+            {
+                baseConfidence = (int)(baseConfidence * 0.7); // Reduzir 30%
+            }
+        }
+
+        // Garantir que não seja sempre 100%
+        return Math.Min(baseConfidence, 95); // Máximo 95% para parecer mais humano
+    }
+
+    /// <summary>
+    /// Gera mensagem mais humana e contextual
+    /// </summary>
+    private string GenerateHumanMessage(Emotion emotion, int confidence, List<SecondaryEmotion> secondaryEmotions, string text)
+    {
+        var messages = new List<string>();
+
+        // Mensagem principal baseada na confiança
+        if (confidence >= 80)
+        {
+            messages.Add($"Parece que você está sentindo {emotion.Name}.");
+        }
+        else if (confidence >= 50)
+        {
+            messages.Add($"Acho que você pode estar sentindo {emotion.Name}.");
+        }
+        else
+        {
+            messages.Add($"Detectei um pouco de {emotion.Name} no que você escreveu.");
+        }
+
+        // Adicionar emoções secundárias se houver
+        if (secondaryEmotions.Any())
+        {
+            var secondary = secondaryEmotions.First();
+            messages.Add($"Também percebi um pouco de {secondary.Name}.");
+        }
+
+        // Adicionar contexto baseado no texto
+        if (text.Contains("hoje") || text.Contains("agora"))
+        {
+            messages.Add("Vejo que isso está acontecendo agora.");
+        }
+
+        return string.Join(" ", messages);
+    }
+
+    /// <summary>
+    /// Normaliza texto (remove acentos, lowercase, etc)
+    /// </summary>
+    private string NormalizeText(string text)
+    {
+        var normalized = text.ToLower().Trim();
+        
+        // Remover acentos básicos (simplificado)
+        normalized = normalized
+            .Replace("á", "a").Replace("à", "a").Replace("â", "a").Replace("ã", "a")
+            .Replace("é", "e").Replace("ê", "e")
+            .Replace("í", "i")
+            .Replace("ó", "o").Replace("ô", "o").Replace("õ", "o")
+            .Replace("ú", "u").Replace("ü", "u")
+            .Replace("ç", "c");
+
+        return normalized;
     }
 
     /// <summary>
@@ -188,40 +356,42 @@ public class EmotionAnalyzerService
         await Task.CompletedTask;
         return suggestions;
     }
-
-    /// <summary>
-    /// Extrai palavras-chave importantes do texto
-    /// Remove stop words e foca no essencial
-    /// </summary>
-    private List<string> ExtractKeywords(string text)
-    {
-        // Stop words em português
-        var stopWords = new HashSet<string>
-        {
-            "estou", "estão", "está", "sinto", "me", "muito", "hoje",
-            "de", "da", "do", "com", "para", "por", "em", "um", "uma",
-            "o", "a", "os", "as", "que", "se", "eu", "você"
-        };
-
-        var words = text.ToLower()
-            .Split(new[] { ' ', ',', '.', '!', '?' }, StringSplitOptions.RemoveEmptyEntries)
-            .Where(w => !stopWords.Contains(w) && w.Length > 2)
-            .ToList();
-
-        return words;
-    }
 }
 
 /// <summary>
-/// Resultado da análise de emoção
+/// Resultado da análise de emoção (melhorado)
 /// </summary>
 public class EmotionAnalysisResult
 {
     public string DetectedEmotion { get; set; } = string.Empty;
     public int EmotionId { get; set; }
-    public int Confidence { get; set; } // 0-100%
+    public int Confidence { get; set; } // 0-100% (mais orgânico, não sempre 100%)
     public string Description { get; set; } = string.Empty;
     public string RecommendationType { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
+    
+    // NOVO: Emoções secundárias (mistura de emoções)
+    public List<SecondaryEmotion> SecondaryEmotions { get; set; } = new();
+    
+    // NOVO: Palavras-chave detectadas
+    public List<string> DetectedKeywords { get; set; } = new();
 }
 
+/// <summary>
+/// Emoção secundária detectada
+/// </summary>
+public class SecondaryEmotion
+{
+    public string Name { get; set; } = string.Empty;
+    public int Confidence { get; set; }
+    public int Score { get; set; }
+}
+
+/// <summary>
+/// Score detalhado de uma emoção
+/// </summary>
+internal class EmotionScore
+{
+    public int TotalScore { get; set; }
+    public List<string> MatchedKeywords { get; set; } = new();
+}
