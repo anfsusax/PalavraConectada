@@ -71,3 +71,4 @@ referencias/
 # Scripts temporários de organização
 scripts/
 
+/backend/PalavraConectada.API/bible.db
