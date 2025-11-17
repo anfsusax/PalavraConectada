@@ -18,15 +18,18 @@ public class VersesController : ControllerBase
 {
     private readonly BibleDbContext _context;
     private readonly BibleService _bibleService;
+    private readonly IntelligentRecommendationService _intelligentRecommendation;
     private readonly ILogger<VersesController> _logger;
 
     public VersesController(
         BibleDbContext context,
         BibleService bibleService,
+        IntelligentRecommendationService intelligentRecommendation,
         ILogger<VersesController> logger)
     {
         _context = context;
         _bibleService = bibleService;
+        _intelligentRecommendation = intelligentRecommendation;
         _logger = logger;
     }
 
@@ -198,7 +201,30 @@ public class VersesController : ControllerBase
             // 5. Buscar sugestões
             var suggestions = await emotionAnalyzer.GetSuggestionsAsync(analysis.DetectedEmotion);
 
-            // 6. Atualizar interação com recomendação
+            // 6. NOVO: Buscar versículos por temas secundários
+            var secondaryThemeVerses = await _intelligentRecommendation.SearchBySecondaryThemesAsync(
+                request.Text, request.Version, 3);
+
+            // 7. NOVO: Buscar histórias bíblicas relacionadas
+            var relatedStories = await _intelligentRecommendation.GetRelatedBibleStoriesAsync(
+                analysis.DetectedEmotion);
+
+            // 8. NOVO: Análise do versículo recomendado (se houver)
+            VerseAnalysisDto? verseAnalysis = null;
+            if (recommendedVerse != null)
+            {
+                var analysisResult = await _intelligentRecommendation.AnalyzeVerseAsync(recommendedVerse);
+                verseAnalysis = new VerseAnalysisDto
+                {
+                    Verse = analysisResult.Verse,
+                    ContextVerses = analysisResult.ContextVerses,
+                    Themes = analysisResult.Themes,
+                    Summary = analysisResult.Summary,
+                    MainMessage = analysisResult.MainMessage
+                };
+            }
+
+            // 9. Atualizar interação com recomendação
             var interaction = await _context.UserInteractions
                 .OrderByDescending(i => i.CreatedAt)
                 .FirstOrDefaultAsync(i => i.DetectedEmotion == analysis.DetectedEmotion);
@@ -218,7 +244,21 @@ public class VersesController : ControllerBase
                 RecommendedVerse = recommendedVerse,
                 AlternativeVerses = verses.Take(3).ToList(),
                 Suggestions = suggestions,
-                Message = analysis.Message
+                Message = analysis.Message,
+                VerseAnalysis = verseAnalysis,
+                SecondaryThemeVerses = secondaryThemeVerses,
+                RelatedStories = relatedStories.Select(s => new BibleStoryReferenceDto
+                {
+                    Title = s.Title,
+                    Reference = s.Reference,
+                    Theme = s.Theme
+                }).ToList(),
+                SecondaryEmotions = analysis.SecondaryEmotions.Select(e => new SecondaryEmotionDto
+                {
+                    Name = e.Name,
+                    Confidence = e.Confidence,
+                    Score = e.Score
+                }).ToList()
             });
         }
         catch (Exception ex)

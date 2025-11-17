@@ -72,7 +72,7 @@ public class EmotionController : ControllerBase
             _context.UserInteractions.Add(interaction);
             await _context.SaveChangesAsync();
 
-            // Montar resposta
+            // Montar resposta (melhorada com emoções secundárias)
             var response = new EmotionResponse
             {
                 DetectedEmotion = analysis.DetectedEmotion,
@@ -80,7 +80,14 @@ public class EmotionController : ControllerBase
                 Message = analysis.Message,
                 RecommendationType = analysis.RecommendationType,
                 Suggestions = suggestions,
-                InteractionId = interaction.Id
+                InteractionId = interaction.Id,
+                SecondaryEmotions = analysis.SecondaryEmotions.Select(e => new SecondaryEmotionDto
+                {
+                    Name = e.Name,
+                    Confidence = e.Confidence,
+                    Score = e.Score
+                }).ToList(),
+                DetectedKeywords = analysis.DetectedKeywords
             };
 
             _logger.LogInformation("✅ Emoção '{Emotion}' detectada com {Confidence}% de confiança",
