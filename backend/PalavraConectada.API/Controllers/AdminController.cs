@@ -117,7 +117,7 @@ public class AdminController : ControllerBase
                 Chapters = request.Chapters
             };
 
-            var result = await _migrationService.MigrateBookAsync(bookInfo, request.Version);
+            var result = await _migrationService.MigrateBookAsync(bookInfo, request.Version, false);
 
             return Ok(new
             {
@@ -142,32 +142,88 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// 🗑️ Limpa o banco (apenas para desenvolvimento)
+    /// 🗑️ Limpa TODOS os versículos do banco de dados
+    /// Use este endpoint para limpar completamente antes de uma nova migração
     /// </summary>
     [HttpDelete("clear-verses")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<object>> ClearVerses()
+    public async Task<ActionResult<object>> ClearAllVerses()
     {
-        _logger.LogWarning("⚠️ LIMPANDO BANCO DE VERSÍCULOS");
+        _logger.LogWarning("⚠️ LIMPANDO TODOS OS VERSÍCULOS DO BANCO DE DADOS");
 
         try
         {
-            var count = await _migrationService.GetDatabaseStatsAsync();
-            
-            // Aqui você implementaria a lógica de limpeza
-            // Por segurança, vou apenas retornar as estatísticas
+            var statsBefore = await _migrationService.GetDatabaseStatsAsync();
+            var result = await _migrationService.ClearAllVersesAsync();
             
             return Ok(new
             {
-                message = "⚠️ Endpoint de limpeza - use com cuidado!",
-                currentStats = count,
-                warning = "Implemente a lógica de limpeza se necessário"
+                success = result.Success,
+                message = result.Success 
+                    ? $"✅ {result.VersesDeleted} versículos removidos com sucesso!" 
+                    : $"❌ Erro ao limpar: {result.ErrorMessage}",
+                versesDeleted = result.VersesDeleted,
+                duration = result.Duration,
+                statsBefore = new
+                {
+                    totalVerses = statsBefore.TotalVerses,
+                    books = statsBefore.Books,
+                    byVersion = statsBefore.VersesByVersion
+                },
+                warning = "⚠️ Todos os versículos foram removidos. Execute a migração novamente para popular o banco."
             });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Erro ao limpar banco");
-            return StatusCode(500, new { error = ex.Message });
+            return StatusCode(500, new 
+            { 
+                success = false,
+                error = ex.Message 
+            });
+        }
+    }
+
+    /// <summary>
+    /// 🗑️ Limpa versículos de uma versão específica
+    /// Use este endpoint para limpar apenas uma versão antes de migrar novamente
+    /// </summary>
+    [HttpDelete("clear-verses/{version}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<object>> ClearVersesByVersion(string version)
+    {
+        _logger.LogWarning("⚠️ Limpando versículos da versão: {Version}", version);
+
+        try
+        {
+            var statsBefore = await _migrationService.GetDatabaseStatsAsync();
+            var result = await _migrationService.ClearVersesByVersionAsync(version);
+            
+            return Ok(new
+            {
+                success = result.Success,
+                message = result.Success 
+                    ? $"✅ {result.VersesDeleted} versículos da versão '{version}' removidos com sucesso!" 
+                    : $"❌ Erro ao limpar: {result.ErrorMessage}",
+                version = version,
+                versesDeleted = result.VersesDeleted,
+                duration = result.Duration,
+                statsBefore = new
+                {
+                    totalVerses = statsBefore.TotalVerses,
+                    versesInVersion = statsBefore.VersesByVersion.GetValueOrDefault(version, 0)
+                },
+                warning = $"⚠️ Versículos da versão '{version}' foram removidos. Execute a migração novamente para popular."
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Erro ao limpar versículos da versão {Version}", version);
+            return StatusCode(500, new 
+            { 
+                success = false,
+                error = ex.Message 
+            });
         }
     }
 

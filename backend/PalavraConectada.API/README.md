@@ -137,16 +137,14 @@ Análise completa + recomendação de versículo.
 
 ---
 
-## 🌐 Sistema de Fallback
+## 🌐 Sistema de Busca Otimizado
 
 ```
-1º → Banco de Dados Local (cache)
-2º → API Brasileira (abibliadigital.com.br)
-3º → API Inglesa (bible-api.com) [futuro]
-4º → Dados MOCK (garantia)
+1º → Cache em Memória (ultra-rápido)
+2º → Banco de Dados SQLite (toda a Bíblia migrada)
 ```
 
-**Nunca falha!** Sempre retorna algo útil.
+**100% local!** Toda a Bíblia está no banco de dados, sem dependência de APIs externas.
 
 ---
 
@@ -165,9 +163,9 @@ Análise completa + recomendação de versículo.
 
 - **ASP.NET Core 8.0** - Framework
 - **Entity Framework Core** - ORM
-- **SQLite** - Banco de dados
+- **SQLite** - Banco de dados (Bíblia completa)
 - **Swagger** - Documentação automática
-- **HttpClient** - Chamadas às APIs externas
+- **Cache em Memória** - Otimização de performance
 
 ---
 

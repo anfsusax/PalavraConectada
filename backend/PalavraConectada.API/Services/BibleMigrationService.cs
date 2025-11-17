@@ -3,7 +3,6 @@
 using PalavraConectada.API.Models;
 using PalavraConectada.API.Data;
 using Microsoft.EntityFrameworkCore;
-using System.Net.Http.Json;
 
 namespace PalavraConectada.API.Services;
 
@@ -14,29 +13,24 @@ namespace PalavraConectada.API.Services;
 public class BibleMigrationService
 {
     private readonly BibleDbContext _context;
-    private readonly HttpClient _httpClient;
+    private readonly LocalBibleJsonService _localBibleService;
     private readonly ILogger<BibleMigrationService> _logger;
-    
-    // Configurações de migração
-    private const int DELAY_BETWEEN_REQUESTS_MS = 2000; // 2 segundos entre requisições
-    private const int DELAY_BETWEEN_CHAPTERS_MS = 500; // 500ms entre capítulos
-    private const int MAX_RETRIES = 3;
 
     public BibleMigrationService(
         BibleDbContext context,
-        HttpClient httpClient,
+        LocalBibleJsonService localBibleService,
         ILogger<BibleMigrationService> logger)
     {
         _context = context;
-        _httpClient = httpClient;
+        _localBibleService = localBibleService;
         _logger = logger;
     }
 
 
     /// <summary>
-    /// Migra a Bíblia completa de forma inteligente
+    /// Migra a Bíblia completa dos arquivos JSON locais
     /// </summary>
-    public async Task<MigrationResult> MigrateCompleteBibleAsync(string version = "nvi")
+    public async Task<MigrationResult> MigrateBibleAsync(string version = "nvi", bool forceReimport = false)
     {
         _logger.LogInformation("📚 Iniciando migração da Bíblia completa (versão: {Version})", version);
         
@@ -44,13 +38,13 @@ public class BibleMigrationService
 
         try
         {
-            // 1. Buscar lista de livros
-            var books = await GetBooksListAsync(version);
+            // 1. Buscar lista de livros dos arquivos JSON locais
+            var books = await _localBibleService.GetBooksListAsync(version);
             
             if (books == null || !books.Any())
             {
                 result.Success = false;
-                result.ErrorMessage = "Não foi possível buscar a lista de livros da API";
+                result.ErrorMessage = "Não foi possível carregar os livros. Verifique se os arquivos JSON estão em biblia-master/json/";
                 return result;
             }
 
@@ -63,19 +57,18 @@ public class BibleMigrationService
                 _logger.LogInformation("📗 Migrando: {BookName} ({Testament})", 
                     book.Name, book.Testament);
 
-                var bookResult = await MigrateBookAsync(book, version);
+                var bookResult = await MigrateBookAsync(book, version, forceReimport);
                 
                 result.BooksMigrated++;
+                result.BooksProcessed = result.BooksMigrated;
                 result.TotalVersesMigrated += bookResult.VersesAdded;
+                result.TotalVersesAdded = result.TotalVersesMigrated;
                 result.TotalVersesSkipped += bookResult.VersesSkipped;
 
                 var progress = (int)((result.BooksMigrated / (double)books.Count) * 100);
                 
                 _logger.LogInformation("✅ {BookName}: {Added} adicionados, {Skipped} já existiam (Progresso: {Progress}%)", 
                     book.Name, bookResult.VersesAdded, bookResult.VersesSkipped, progress);
-
-                // Delay entre livros para não sobrecarregar a API
-                await Task.Delay(DELAY_BETWEEN_REQUESTS_MS);
             }
 
             result.Success = true;
@@ -99,7 +92,7 @@ public class BibleMigrationService
     /// <summary>
     /// Migra um livro específico da Bíblia
     /// </summary>
-    public async Task<BookMigrationResult> MigrateBookAsync(BookInfo book, string version)
+    public async Task<BookMigrationResult> MigrateBookAsync(BookInfo book, string version, bool forceReimport = false)
     {
         var result = new BookMigrationResult { BookName = book.Name };
 
@@ -108,16 +101,10 @@ public class BibleMigrationService
             // Buscar todos os capítulos do livro
             for (int chapter = 1; chapter <= book.Chapters; chapter++)
             {
-                var chapterResult = await MigrateChapterAsync(book, chapter, version);
+                var chapterResult = await MigrateChapterAsync(book, chapter, version, forceReimport);
                 
                 result.VersesAdded += chapterResult.VersesAdded;
                 result.VersesSkipped += chapterResult.VersesSkipped;
-
-                // Delay entre capítulos (evita sobrecarga)
-                if (chapter < book.Chapters)
-                {
-                    await Task.Delay(DELAY_BETWEEN_CHAPTERS_MS);
-                }
             }
 
             result.Success = true;
@@ -133,44 +120,34 @@ public class BibleMigrationService
     }
 
     /// <summary>
-    /// Migra um capítulo específico
+    /// Migra um capítulo específico dos arquivos JSON locais
     /// </summary>
     private async Task<ChapterMigrationResult> MigrateChapterAsync(
         BookInfo book, 
         int chapter, 
-        string version)
+        string version,
+        bool forceReimport = false)
     {
         var result = new ChapterMigrationResult();
-        var retryCount = 0;
 
-        while (retryCount < MAX_RETRIES)
+        try
         {
-            try
+            // Buscar capítulo dos arquivos JSON locais
+            var verses = await _localBibleService.GetChapterVersesAsync(book.Abbrev, chapter, version);
+            
+            if (!verses.Any())
             {
-                // Buscar capítulo da API
-                var url = $"https://www.abibliadigital.com.br/api/verses/{version}/{book.Abbrev}/{chapter}";
-                var response = await _httpClient.GetAsync(url);
+                _logger.LogWarning("⚠️ Capítulo {Book} {Chapter} não encontrado nos arquivos JSON", 
+                    book.Name, chapter);
+                return result;
+            }
 
-                if (!response.IsSuccessStatusCode)
+            // Salvar versículos em batch
+            foreach (var verseData in verses)
+            {
+                // Verificar se já existe (se não for reimportação forçada)
+                if (!forceReimport)
                 {
-                    _logger.LogWarning("⚠️ Erro ao buscar {Book} {Chapter}: {Status}", 
-                        book.Name, chapter, response.StatusCode);
-                    retryCount++;
-                    await Task.Delay(2000 * retryCount); // Backoff exponencial
-                    continue;
-                }
-
-                var chapterData = await response.Content.ReadFromJsonAsync<ChapterApiResponse>();
-                
-                if (chapterData?.Verses == null || !chapterData.Verses.Any())
-                {
-                    break;
-                }
-
-                // Salvar versículos em batch
-                foreach (var verseData in chapterData.Verses)
-                {
-                    // Verificar se já existe
                     var exists = await _context.Verses.AnyAsync(v =>
                         v.BookAbbrev == book.Abbrev &&
                         v.Chapter == chapter &&
@@ -182,104 +159,40 @@ public class BibleMigrationService
                         result.VersesSkipped++;
                         continue;
                     }
-
-                    // Criar novo versículo
-                    var verse = new Verse
-                    {
-                        BookName = book.Name,
-                        BookAbbrev = book.Abbrev,
-                        Author = book.Author,
-                        Group = book.Group,
-                        Testament = book.Testament,
-                        Chapter = chapter,
-                        Number = verseData.Number,
-                        Text = verseData.Text,
-                        Version = version
-                    };
-
-                    _context.Verses.Add(verse);
-                    result.VersesAdded++;
                 }
 
-                // Salvar em lote
-                await _context.SaveChangesAsync();
-                break; // Sucesso, sair do retry
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "❌ Erro ao migrar {Book} {Chapter} (tentativa {Retry})", 
-                    book.Name, chapter, retryCount + 1);
-                retryCount++;
-                
-                if (retryCount >= MAX_RETRIES)
+                // Criar novo versículo
+                var verse = new Verse
                 {
-                    result.ErrorMessage = $"Falha após {MAX_RETRIES} tentativas";
-                    break;
-                }
+                    BookName = book.Name,
+                    BookAbbrev = book.Abbrev,
+                    Author = book.Author,
+                    Group = book.Group,
+                    Testament = book.Testament,
+                    Chapter = chapter,
+                    Number = verseData.Number,
+                    Text = verseData.Text,
+                    Version = version
+                };
 
-                await Task.Delay(2000 * retryCount); // Backoff exponencial
+                _context.Verses.Add(verse);
+                result.VersesAdded++;
             }
+
+            // Salvar em lote
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Erro ao migrar {Book} {Chapter}", 
+                book.Name, chapter);
+            result.ErrorMessage = ex.Message;
         }
 
         return result;
     }
 
-    /// <summary>
-    /// Busca lista de todos os livros da Bíblia
-    /// </summary>
-    private async Task<List<BookInfo>?> GetBooksListAsync(string version)
-    {
-        try
-        {
-            var url = $"https://www.abibliadigital.com.br/api/books";
-            var response = await _httpClient.GetAsync(url);
-            
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogError("❌ Erro ao buscar lista de livros: {Status}", response.StatusCode);
-                return GetDefaultBooksList(); // Usar lista hardcoded como fallback
-            }
-
-            var books = await response.Content.ReadFromJsonAsync<List<BookApiResponse>>();
-            
-            return books?.Select(b => new BookInfo
-            {
-                Abbrev = b.Abbrev?.Pt ?? "unknown",
-                Name = b.Name,
-                Author = b.Author,
-                Group = b.Group,
-                Testament = b.Testament,
-                Chapters = b.Chapters
-            }).ToList();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "❌ Erro ao buscar livros");
-            return GetDefaultBooksList(); // Fallback
-        }
-    }
-
-    /// <summary>
-    /// Lista padrão dos 66 livros da Bíblia (fallback)
-    /// </summary>
-    private List<BookInfo> GetDefaultBooksList()
-    {
-        return new List<BookInfo>
-        {
-            // VELHO TESTAMENTO
-            new() { Abbrev = "gn", Name = "Gênesis", Author = "Moisés", Group = "Pentateuco", Testament = "VT", Chapters = 50 },
-            new() { Abbrev = "ex", Name = "Êxodo", Author = "Moisés", Group = "Pentateuco", Testament = "VT", Chapters = 40 },
-            new() { Abbrev = "lv", Name = "Levítico", Author = "Moisés", Group = "Pentateuco", Testament = "VT", Chapters = 27 },
-            new() { Abbrev = "nm", Name = "Números", Author = "Moisés", Group = "Pentateuco", Testament = "VT", Chapters = 36 },
-            new() { Abbrev = "dt", Name = "Deuteronômio", Author = "Moisés", Group = "Pentateuco", Testament = "VT", Chapters = 34 },
-            new() { Abbrev = "js", Name = "Josué", Author = "Josué", Group = "Históricos", Testament = "VT", Chapters = 24 },
-            new() { Abbrev = "jz", Name = "Juízes", Author = "Samuel", Group = "Históricos", Testament = "VT", Chapters = 21 },
-            new() { Abbrev = "rt", Name = "Rute", Author = "Samuel", Group = "Históricos", Testament = "VT", Chapters = 4 },
-            new() { Abbrev = "1sm", Name = "1 Samuel", Author = "Samuel", Group = "Históricos", Testament = "VT", Chapters = 31 },
-            new() { Abbrev = "2sm", Name = "2 Samuel", Author = "Samuel", Group = "Históricos", Testament = "VT", Chapters = 24 },
-            // ... (continuaria com todos os 66 livros, mas vou criar endpoint para buscar dinamicamente)
-        };
-    }
+    // Métodos antigos removidos - agora usamos LocalBibleJsonService
 
     /// <summary>
     /// Obtém estatísticas do banco
@@ -307,6 +220,85 @@ public class BibleMigrationService
 
         return stats;
     }
+
+    /// <summary>
+    /// Limpa todos os versículos do banco de dados
+    /// </summary>
+    public async Task<ClearDatabaseResult> ClearAllVersesAsync()
+    {
+        _logger.LogWarning("🗑️ Limpando TODOS os versículos do banco de dados");
+        
+        var result = new ClearDatabaseResult { StartTime = DateTime.UtcNow };
+
+        try
+        {
+            // Contar antes de limpar
+            result.VersesDeleted = await _context.Verses.CountAsync();
+            
+            // Limpar todos os versículos
+            _context.Verses.RemoveRange(_context.Verses);
+            await _context.SaveChangesAsync();
+            
+            result.Success = true;
+            result.EndTime = DateTime.UtcNow;
+            
+            _logger.LogInformation("✅ {Count} versículos removidos do banco", result.VersesDeleted);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Erro ao limpar banco de dados");
+            result.Success = false;
+            result.ErrorMessage = ex.Message;
+            result.EndTime = DateTime.UtcNow;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Limpa versículos de uma versão específica
+    /// </summary>
+    public async Task<ClearDatabaseResult> ClearVersesByVersionAsync(string version)
+    {
+        _logger.LogWarning("🗑️ Limpando versículos da versão: {Version}", version);
+        
+        var result = new ClearDatabaseResult 
+        { 
+            StartTime = DateTime.UtcNow,
+            Version = version
+        };
+
+        try
+        {
+            // Contar antes de limpar
+            result.VersesDeleted = await _context.Verses
+                .Where(v => v.Version == version)
+                .CountAsync();
+            
+            // Limpar versículos da versão específica
+            var versesToDelete = await _context.Verses
+                .Where(v => v.Version == version)
+                .ToListAsync();
+            
+            _context.Verses.RemoveRange(versesToDelete);
+            await _context.SaveChangesAsync();
+            
+            result.Success = true;
+            result.EndTime = DateTime.UtcNow;
+            
+            _logger.LogInformation("✅ {Count} versículos da versão {Version} removidos", 
+                result.VersesDeleted, version);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Erro ao limpar versículos da versão {Version}", version);
+            result.Success = false;
+            result.ErrorMessage = ex.Message;
+            result.EndTime = DateTime.UtcNow;
+        }
+
+        return result;
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -320,7 +312,9 @@ public class MigrationResult
     public int TotalBooks { get; set; }
     public int BooksMigrated { get; set; }
     public int TotalVersesMigrated { get; set; }
+    public int TotalVersesAdded { get; set; } // Alias para TotalVersesMigrated
     public int TotalVersesSkipped { get; set; }
+    public int BooksProcessed { get; set; } // Alias para BooksMigrated
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
     public TimeSpan Duration => EndTime - StartTime;
@@ -363,41 +357,17 @@ public class DatabaseStats
     public Dictionary<string, int> VersesByTestament { get; set; } = new();
 }
 
-// Modelos da API brasileira
-public class BookApiResponse
+public class ClearDatabaseResult
 {
-    public BookAbbrevApi? Abbrev { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string Author { get; set; } = string.Empty;
-    public string Group { get; set; } = string.Empty;
-    public string Testament { get; set; } = string.Empty;
-    public int Chapters { get; set; }
+    public bool Success { get; set; }
+    public string? Version { get; set; }
+    public int VersesDeleted { get; set; }
+    public DateTime StartTime { get; set; }
+    public DateTime EndTime { get; set; }
+    public TimeSpan Duration => EndTime - StartTime;
+    public string? ErrorMessage { get; set; }
 }
 
-public class BookAbbrevApi
-{
-    public string Pt { get; set; } = string.Empty;
-    public string En { get; set; } = string.Empty;
-}
-
-public class ChapterApiResponse
-{
-    public ChapterBookInfo? Book { get; set; }
-    public int Chapter { get; set; }
-    public List<ChapterVerseInfo> Verses { get; set; } = new();
-}
-
-public class ChapterBookInfo
-{
-    public string Name { get; set; } = string.Empty;
-    public string Author { get; set; } = string.Empty;
-    public string Group { get; set; } = string.Empty;
-    public string Version { get; set; } = string.Empty;
-}
-
-public class ChapterVerseInfo
-{
-    public int Number { get; set; }
-    public string Text { get; set; } = string.Empty;
-}
+// Modelos da API externa - REMOVIDOS (não usamos mais APIs externas)
+// Agora usamos apenas LocalBibleJsonService para migração
 

@@ -51,38 +51,9 @@ public class SearchVerseResponse
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// EXTERNAL API DTOs (Brazilian API)
+// EXTERNAL API DTOs - REMOVIDOS (não usamos mais APIs externas)
+// Agora usamos apenas o banco de dados local
 // ═══════════════════════════════════════════════════════════════════════════
-
-public class BrasilianApiResponse
-{
-    public int Occurrence { get; set; }
-    public string Version { get; set; } = string.Empty;
-    public List<BrasilianApiVerse> Verses { get; set; } = new();
-}
-
-public class BrasilianApiVerse
-{
-    public BrasilianApiBook? Book { get; set; }
-    public int Chapter { get; set; }
-    public int Number { get; set; }
-    public string Text { get; set; } = string.Empty;
-}
-
-public class BrasilianApiBook
-{
-    public BrasilianApiAbbrev? Abbrev { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string Author { get; set; } = string.Empty;
-    public string Group { get; set; } = string.Empty;
-    public string Version { get; set; } = string.Empty;
-}
-
-public class BrasilianApiAbbrev
-{
-    public string Pt { get; set; } = string.Empty;
-    public string En { get; set; } = string.Empty;
-}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // NEW: BUSCA COMPLETA + FRASE MOTIVACIONAL

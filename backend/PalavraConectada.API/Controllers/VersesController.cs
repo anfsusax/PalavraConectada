@@ -101,11 +101,11 @@ public class VersesController : ControllerBase
             .Select(ve => ve.Verse)
             .ToListAsync();
 
-        // Se não tiver no banco, buscar nas APIs externas
+        // Se não tiver no banco, buscar diretamente no banco por palavra-chave
         if (!verses.Any())
         {
-            _logger.LogInformation("📡 Buscando nas APIs externas...");
-            verses = await _bibleService.SearchVersesByEmotionAsync(emotionName, version);
+            _logger.LogInformation("🔍 Buscando versículos por palavra-chave relacionada...");
+            verses = await _bibleService.SearchVersesByEmotionAsync(emotionName, version, limit);
         }
 
         return Ok(verses);
@@ -175,12 +175,13 @@ public class VersesController : ControllerBase
                 .Select(ve => ve.Verse)
                 .ToListAsync();
 
-            // 3. Se não tiver no banco, buscar externamente
+            // 3. Se não tiver relacionamentos, buscar diretamente no banco
             if (!verses.Any())
             {
                 verses = await _bibleService.SearchVersesByEmotionAsync(
                     analysis.DetectedEmotion, 
-                    request.Version);
+                    request.Version,
+                    5);
             }
 
             // 4. Pegar um versículo aleatório da lista

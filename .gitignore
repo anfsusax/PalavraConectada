@@ -57,6 +57,14 @@ Thumbs.db
 *.log
 logs/
 
+# SQLite Database
+*.db
+*.db-shm
+*.db-wal
+
+# Dados da Bíblia (JSONs locais - não versionar)
+biblia-master/
+
 # Referências externas (não versionar código de terceiros)
 referencias/
 

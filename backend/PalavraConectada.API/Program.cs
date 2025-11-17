@@ -34,7 +34,7 @@ API inteligente que conecta emoções humanas à Palavra de Deus.
 - 🧠 **Análise de Emoções:** Detecta sentimentos em texto livre
 - 📖 **Busca Inteligente:** Recomenda versículos baseado em emoções
 - 🎲 **Versículo Aleatório:** Deixe Deus surpreender
-- 📊 **Sistema de Fallback:** Múltiplas fontes de dados
+- ⚡ **Sistema Otimizado:** Banco de dados + Cache em memória
 - 🚀 **Migração Automática:** Importa 31.102 versículos com um clique
 
 ## 🙏 Versículo:
@@ -67,10 +67,8 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<BibleDbContext>(options =>
     options.UseSqlite(connectionString));
 
-// HttpClient para APIs externas
-builder.Services.AddHttpClient();
-
 // Serviços personalizados
+builder.Services.AddSingleton<LocalBibleJsonService>(); // Serviço para ler JSONs da pasta biblia-master
 builder.Services.AddScoped<EmotionAnalyzerService>();
 builder.Services.AddScoped<BibleService>();
 builder.Services.AddScoped<BibleMigrationService>(); // 🔥 Migração inteligente
