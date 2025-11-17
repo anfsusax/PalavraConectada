@@ -16,13 +16,16 @@ namespace PalavraConectada.API.Controllers;
 public class AdminController : ControllerBase
 {
     private readonly BibleMigrationService _migrationService;
+    private readonly BibleDbContext _context;
     private readonly ILogger<AdminController> _logger;
 
     public AdminController(
         BibleMigrationService migrationService,
+        BibleDbContext context,
         ILogger<AdminController> logger)
     {
         _migrationService = migrationService;
+        _context = context;
         _logger = logger;
     }
 
@@ -55,6 +58,61 @@ public class AdminController : ControllerBase
         {
             _logger.LogError(ex, "❌ Erro ao buscar estatísticas");
             return StatusCode(500, new { error = "Erro ao buscar estatísticas" });
+        }
+    }
+
+    /// <summary>
+    /// 🔍 Consultar versículos de uma versão específica (ex: ACF)
+    /// </summary>
+    [HttpGet("query-version/{version}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<object>> QueryVersion(string version, [FromQuery] int limit = 10)
+    {
+        _logger.LogInformation("🔍 Consultando versículos da versão: {Version}", version);
+
+        try
+        {
+            var totalCount = await _context.Verses
+                .Where(v => v.Version == version.ToLower())
+                .CountAsync();
+
+            var verses = await _context.Verses
+                .Where(v => v.Version == version.ToLower())
+                .OrderBy(v => v.BookName)
+                .ThenBy(v => v.Chapter)
+                .ThenBy(v => v.Number)
+                .Take(limit)
+                .Select(v => new
+                {
+                    v.BookName,
+                    v.Chapter,
+                    v.Number,
+                    v.Text,
+                    v.Version
+                })
+                .ToListAsync();
+
+            var booksCount = await _context.Verses
+                .Where(v => v.Version == version.ToLower())
+                .Select(v => v.BookName)
+                .Distinct()
+                .CountAsync();
+
+            return Ok(new
+            {
+                version = version.ToLower(),
+                totalVerses = totalCount,
+                totalBooks = booksCount,
+                sampleVerses = verses,
+                message = totalCount == 0 
+                    ? $"⚠️ Nenhum versículo encontrado para a versão '{version}'. Você precisa migrar esta versão primeiro usando POST /api/Admin/migrate"
+                    : $"✅ Encontrados {totalCount} versículos da versão '{version}' em {booksCount} livros"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Erro ao consultar versão {Version}", version);
+            return StatusCode(500, new { error = $"Erro ao consultar versão: {ex.Message}" });
         }
     }
 

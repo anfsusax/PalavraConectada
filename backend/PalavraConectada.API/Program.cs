@@ -15,8 +15,15 @@ builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 // CONFIGURAÇÃO DE SERVIÇOS
 // ═══════════════════════════════════════════════════════════════════════════
 
-// Controllers
-builder.Services.AddControllers();
+// Controllers com JSON em camelCase
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles; // Ignora referências circulares
+        options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull; // Ignora nulls
+    });
 
 // Swagger/OpenAPI - Documentação automática
 builder.Services.AddEndpointsApiExplorer();
@@ -89,6 +96,10 @@ builder.Services.AddCors(options =>
                     "http://localhost:4200",
                     "https://localhost:5001",
                     "http://localhost:5001",
+                    "http://localhost:5008",
+                    "http://localhost:7180",   // Blazor WebAssembly (HTTP)
+                    "https://localhost:7180",  // Blazor WebAssembly (HTTPS) - IMPORTANTE!
+                    "http://localhost:8080",   // API Backend
                     "http://localhost:5292",
                     "https://localhost:7292"
                 )
@@ -195,6 +206,9 @@ using (var scope = app.Services.CreateScope())
 // MIDDLEWARE PIPELINE
 // ═══════════════════════════════════════════════════════════════════════════
 
+// CORS - DEVE vir ANTES de tudo (incluindo Swagger) para funcionar corretamente
+app.UseCors("AllowFrontend");
+
 // Swagger - Habilitado em todos os ambientes para facilitar testes
 app.UseSwagger();
 app.UseSwaggerUI(options =>
@@ -215,9 +229,6 @@ else
 
 // HTTPS Redirection (desabilitado em desenvolvimento para facilitar testes)
 // app.UseHttpsRedirection();
-
-// CORS - DEVE vir antes de Authorization
-app.UseCors("AllowFrontend");
 
 // Rate Limiting - DEVE vir antes de Authorization
 app.UseRateLimiter();

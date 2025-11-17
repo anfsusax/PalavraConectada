@@ -2,6 +2,7 @@
 // Como um escriba que conhece toda a Escritura
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Hosting;
 using PalavraConectada.API.Services;
 using PalavraConectada.API.Data;
 using Microsoft.EntityFrameworkCore;
@@ -20,17 +21,20 @@ public class VersesController : ControllerBase
     private readonly BibleService _bibleService;
     private readonly IntelligentRecommendationService _intelligentRecommendation;
     private readonly ILogger<VersesController> _logger;
+    private readonly IWebHostEnvironment _environment;
 
     public VersesController(
         BibleDbContext context,
         BibleService bibleService,
         IntelligentRecommendationService intelligentRecommendation,
-        ILogger<VersesController> logger)
+        ILogger<VersesController> logger,
+        IWebHostEnvironment environment)
     {
         _context = context;
         _bibleService = bibleService;
         _intelligentRecommendation = intelligentRecommendation;
         _logger = logger;
+        _environment = environment;
     }
 
     /// <summary>
@@ -60,6 +64,8 @@ public class VersesController : ControllerBase
         {
             var verses = await _bibleService.SearchVersesAsync(keyword, version);
             
+            _logger.LogInformation("✅ Encontrados {Count} versículos para '{Keyword}'", verses.Count, keyword);
+            
             return Ok(new SearchVerseResponse
             {
                 Keyword = keyword,
@@ -70,8 +76,13 @@ public class VersesController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Erro ao buscar versículos");
-            return StatusCode(500, new { error = "Erro ao buscar versículos" });
+            _logger.LogError(ex, "❌ Erro ao buscar versículos: {Message}\nStackTrace: {StackTrace}", 
+                ex.Message, ex.StackTrace);
+            return StatusCode(500, new { 
+                error = "Erro ao buscar versículos",
+                message = ex.Message,
+                details = ex.InnerException?.Message
+            });
         }
     }
 
@@ -169,13 +180,20 @@ public class VersesController : ControllerBase
 
         try
         {
+            _logger.LogInformation("📝 Texto recebido: {Text}", request.Text);
+            _logger.LogInformation("📖 Versão solicitada: {Version}", request.Version);
+            
             // 1. Analisar emoção
             var emotionAnalyzer = HttpContext.RequestServices
                 .GetRequiredService<EmotionAnalyzerService>();
             
+            _logger.LogInformation("🧠 Iniciando análise de emoção...");
             var analysis = await emotionAnalyzer.AnalyzeEmotionAsync(request.Text);
+            _logger.LogInformation("✅ Emoção detectada: {Emotion} ({Confidence}%)", 
+                analysis.DetectedEmotion, analysis.Confidence);
 
             // 2. Buscar versículos para esta emoção
+            _logger.LogInformation("🔍 Buscando versículos para emoção: {Emotion}...", analysis.DetectedEmotion);
             var verses = await _context.VerseEmotions
                 .Where(ve => ve.Emotion.Name == analysis.DetectedEmotion)
                 .Include(ve => ve.Verse)
@@ -183,6 +201,7 @@ public class VersesController : ControllerBase
                 .Take(5)
                 .Select(ve => ve.Verse)
                 .ToListAsync();
+            _logger.LogInformation("📚 Encontrados {Count} versículos relacionados", verses.Count);
 
             // 3. Se não tiver relacionamentos, buscar diretamente no banco
             if (!verses.Any())
@@ -202,17 +221,23 @@ public class VersesController : ControllerBase
             var suggestions = await emotionAnalyzer.GetSuggestionsAsync(analysis.DetectedEmotion);
 
             // 6. NOVO: Buscar versículos por temas secundários
+            _logger.LogInformation("💡 Buscando versículos por temas secundários...");
             var secondaryThemeVerses = await _intelligentRecommendation.SearchBySecondaryThemesAsync(
                 request.Text, request.Version, 3);
+            _logger.LogInformation("✅ Encontrados {Count} versículos de temas secundários", secondaryThemeVerses.Count);
 
             // 7. NOVO: Buscar histórias bíblicas relacionadas
+            _logger.LogInformation("📚 Buscando histórias bíblicas relacionadas...");
             var relatedStories = await _intelligentRecommendation.GetRelatedBibleStoriesAsync(
                 analysis.DetectedEmotion);
+            _logger.LogInformation("✅ Encontradas {Count} histórias relacionadas", relatedStories.Count);
 
             // 8. NOVO: Análise do versículo recomendado (se houver)
             VerseAnalysisDto? verseAnalysis = null;
             if (recommendedVerse != null)
             {
+                _logger.LogInformation("📖 Analisando versículo recomendado: {Reference}...", 
+                    $"{recommendedVerse.BookName} {recommendedVerse.Chapter}:{recommendedVerse.Number}");
                 var analysisResult = await _intelligentRecommendation.AnalyzeVerseAsync(recommendedVerse);
                 verseAnalysis = new VerseAnalysisDto
                 {
@@ -222,6 +247,7 @@ public class VersesController : ControllerBase
                     Summary = analysisResult.Summary,
                     MainMessage = analysisResult.MainMessage
                 };
+                _logger.LogInformation("✅ Análise do versículo concluída");
             }
 
             // 9. Atualizar interação com recomendação
@@ -236,7 +262,9 @@ public class VersesController : ControllerBase
                 await _context.SaveChangesAsync();
             }
 
-            return Ok(new RecommendationResponse
+            _logger.LogInformation("✅ Montando resposta de recomendação...");
+            
+            var response = new RecommendationResponse
             {
                 UserInput = request.Text,
                 DetectedEmotion = analysis.DetectedEmotion,
@@ -259,12 +287,21 @@ public class VersesController : ControllerBase
                     Confidence = e.Confidence,
                     Score = e.Score
                 }).ToList()
-            });
+            };
+            
+            _logger.LogInformation("✅ Recomendação gerada com sucesso! Retornando resposta...");
+            return Ok(response);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Erro ao gerar recomendação");
-            return StatusCode(500, new { error = "Erro ao gerar recomendação" });
+            _logger.LogError(ex, "❌ Erro ao gerar recomendação: {Message}\nStackTrace: {StackTrace}\nInnerException: {InnerException}", 
+                ex.Message, ex.StackTrace, ex.InnerException?.Message);
+            return StatusCode(500, new { 
+                error = "Erro ao gerar recomendação",
+                message = ex.Message,
+                details = ex.InnerException?.Message,
+                stackTrace = _environment.IsDevelopment() ? ex.StackTrace : null
+            });
         }
     }
 

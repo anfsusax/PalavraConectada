@@ -27,7 +27,8 @@ public class Verse
     // Metadados
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
-    // Relacionamento com emoções
+    // Relacionamento com emoções (ignorado na serialização JSON para evitar referências circulares)
+    [System.Text.Json.Serialization.JsonIgnore]
     public List<VerseEmotion> VerseEmotions { get; set; } = new();
 }
 
